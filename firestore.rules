@@ -1,0 +1,111 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+  match /users/{uid} {
+      allow read: if request.auth.uid == uid;
+    }
+    match /ideas/{id} {
+      allow read: if request.auth != null;
+    }
+    match /pointsHistory/{id} {
+      allow read: if request.auth.uid == resource.data.userId;
+    }
+
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == "pmanjunatha9182@gmail.com";
+    }
+
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow create: if isOwner(userId);
+      allow update: if request.auth != null && (
+          isAdmin() ||
+          (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(['isPremium', 'subscriptionActive', 'subscriptionExpiry'])) ||
+          (!isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['referralCount', 'exclusiveTickets', 'exclusiveEarned', 'coins', 'wallet']))
+      );
+      match /{allSubcollections=**} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+    }
+
+    match /missions/{userId}/{allPaths=**} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    match /weeklyMission/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    match /missionCompletions/{docId} {
+      allow create: if request.auth != null;
+      allow read: if isAdmin() || (request.auth != null && request.resource.data.uid == request.auth.uid);
+    }
+
+    match /withdrawRequests/{requestId} {
+      allow create: if request.auth != null;
+      allow read: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    match /withdrawalRequests/{userId}/{allPaths=**} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    match /referrals/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && request.resource.data.referredUid == request.auth.uid;
+    }
+
+    match /adLogs/{logId} {
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow read: if isAdmin();
+    }
+
+    match /ideas/{ideaId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && (
+        isAdmin() ||
+        resource.data.creatorId == request.auth.uid ||
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['likesCount', 'viewsCount', 'commentsCount', 'rating', 'ratingCount', 'ratingSum'])
+      );
+      allow delete: if isAdmin() || (request.auth != null && resource.data.creatorId == request.auth.uid);
+      match /{subCollection}/{docId} {
+         allow read, create: if request.auth != null;
+         allow update, delete: if isAdmin() || (request.auth != null && resource.data.uid == request.auth.uid);
+      }
+    }
+
+    match /transactions/{orderId} {
+      allow create: if request.auth != null;
+      allow read: if isAdmin() || (request.auth != null && (resource.data.uid == request.auth.uid || resource.data.userId == request.auth.uid));
+      allow update: if isAdmin();
+    }
+
+    match /walletBalance/{creatorId} {
+      allow read: if isOwner(creatorId) || isAdmin();
+      allow create, update: if request.auth != null;
+    }
+
+    match /walletTransactions/{creatorId}/transactions/{txId} {
+      allow read: if isOwner(creatorId) || isAdmin();
+      allow create: if request.auth != null;
+    }
+
+    match /appSettings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

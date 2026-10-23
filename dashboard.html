@@ -567,24 +567,22 @@ async function loadAllMembers(){
   try{
     const snap = await getDocs(collection(db,"users"));
     allMembers = snap.docs.map(d=>{
-      const u=d.data();
-      // Read directly from Firestore fields — no fallback calculation
-      const w = Number(u.ideasWatched  ?? u.watched    ?? 0);
-      const r = Number(u.verifiedReferrals ?? u.referrals ?? 0);
-      const a = Number(u.approvedIdeas ?? u.ideas      ?? 0);
-      const pts = calcPts(w,r,a);
+      const u = d.data();
+      // Match actual Android app field names from Firestore rules:
+      // referralCount, coins, approvedIdeas / ideasWatched
+      const w = Number(u.ideasWatched  ?? u.watched       ?? 0);
+      const r = Number(u.referralCount ?? u.verifiedReferrals ?? u.referrals ?? 0);
+      const a = Number(u.approvedIdeas ?? u.ideas         ?? 0);
+      const pts = calcPts(w, r, a);
       return {
         uid: d.id,
         name: u.username||u.name||u.email||"Member",
-        email: u.email||"",
         photo: u.photoURL||"",
         w, r, a, pts,
         createdAt: u.createdAt
       };
-    })
-    // Sort: highest points first; tie-break by earliest registration
-    .sort((a,b) => b.pts - a.pts || (a.createdAt?.seconds||0) - (b.createdAt?.seconds||0));
-  }catch(e){ console.error("loadAllMembers",e); }
+    }).sort((a,b) => b.pts - a.pts || (a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));
+  }catch(e){ console.error("loadAllMembers",e.code,e.message); }
 }
 
 /* ── USER DATA + STATS ── */
@@ -592,25 +590,22 @@ async function loadUserData(user){
   const snap = await getDoc(doc(db,"users",user.uid));
   const u = snap.exists() ? snap.data() : {};
 
-  const name    = u.username||u.name||user.email.split("@")[0];
-  const photo   = u.photoURL||user.photoURL||avatar(name);
+  const name  = u.username||u.name||user.email.split("@")[0];
+  const photo = u.photoURL||user.photoURL||avatar(name);
 
-  // Read raw counts directly from Firestore
-  const watched = Number(u.ideasWatched  ?? u.watched    ?? 0);
-  const refs    = Number(u.verifiedReferrals ?? u.referrals ?? 0);
-  const ideas   = Number(u.approvedIdeas ?? u.ideas      ?? 0);
+  // Use actual Android app field names
+  const watched = Number(u.ideasWatched  ?? u.watched       ?? 0);
+  const refs    = Number(u.referralCount ?? u.verifiedReferrals ?? u.referrals ?? 0);
+  const ideas   = Number(u.approvedIdeas ?? u.ideas         ?? 0);
   const pts     = calcPts(watched, refs, ideas);
 
-  // Rank = position in sorted allMembers list (1-based)
   const rankIdx = allMembers.findIndex(m => m.uid === user.uid);
   const rank    = rankIdx >= 0 ? rankIdx + 1 : null;
 
-  // Header
   document.getElementById("topAvatar").src = photo;
   document.getElementById("topUsername").textContent = name;
   document.getElementById("welcomeTitle").textContent = `Welcome back, ${name}!`;
 
-  // Dashboard stats
   document.getElementById("sPoints").textContent    = pts;
   document.getElementById("sIdeas").textContent     = ideas;
   document.getElementById("sReferrals").textContent = refs;
@@ -618,13 +613,11 @@ async function loadUserData(user){
   document.getElementById("sRank").textContent      = rank ? "#"+rank : "Unranked";
   document.getElementById("sPrize").textContent     = rank ? getPrize(rank) : "—";
 
-  // My Points page
   document.getElementById("ptTotal").textContent = pts;
   document.getElementById("ptIdeas").textContent = ideas * 100;
   document.getElementById("ptRefs").textContent  = refs  * 300;
   document.getElementById("ptWatch").textContent = watched * 10;
 
-  // Referral count display
   document.getElementById("refCountDisplay").textContent = refs;
 
   renderTop3();
@@ -703,79 +696,117 @@ document.getElementById("fullLbSearch").addEventListener("input",()=>{ fullPage=
 
 /* ── MY IDEAS ── */
 async function loadMyIdeas(uid){
-  const tbody=document.getElementById("myIdeasBody");
+  const tbody = document.getElementById("myIdeasBody");
   try{
-    const q=query(collection(db,"ideas"),where("userId","==",uid),orderBy("createdAt","desc"));
-    const snap=await getDocs(q);
-    if(snap.empty){ tbody.innerHTML=empty("No ideas posted yet.",4); return; }
-    tbody.innerHTML=snap.docs.map(d=>{
-      const idea=d.data();
-      const st=(idea.status||"pending").toLowerCase();
-      const pts=st==="approved"?"+100":"—";
-      return `<tr>
-        <td>${idea.title||"Untitled"}</td>
-        <td>${fmtDate(idea.createdAt)}</td>
-        <td><span class="badge ${st}">${st.charAt(0).toUpperCase()+st.slice(1)}</span></td>
-        <td style="color:var(--green);font-weight:600;">${pts}</td>
-      </tr>`;
-    }).join("");
-  }catch(e){ tbody.innerHTML=errRow("Could not load ideas. Check Firestore rules.",4); console.error(e); }
+    // Android app uses creatorId field in ideas collection
+    const snap = await getDocs(query(collection(db,"ideas"), where("creatorId","==",uid)));
+    if(snap.empty){ tbody.innerHTML=`<tr><td colspan="4"><div class="state-box"><div class="state-icon">📭</div><p>No ideas posted yet.</p></div></td></tr>`; return; }
+    const rows = snap.docs
+      .sort((a,b)=>(b.data().createdAt?.seconds||0)-(a.data().createdAt?.seconds||0))
+      .map(d=>{
+        const idea = d.data();
+        const st   = (idea.status||idea.approvalStatus||"pending").toLowerCase();
+        const pts  = st==="approved" ? "+100" : "—";
+        return `<tr>
+          <td>${idea.title||idea.ideaTitle||"Untitled"}</td>
+          <td>${fmtDate(idea.createdAt||idea.submittedAt||idea.timestamp)}</td>
+          <td><span class="badge ${st}">${st.charAt(0).toUpperCase()+st.slice(1)}</span></td>
+          <td style="color:var(--green);font-weight:600">${pts}</td>
+        </tr>`;
+      });
+    tbody.innerHTML = rows.join("");
+  }catch(e){
+    console.error("loadMyIdeas",e.code, e.message);
+    tbody.innerHTML = `<tr><td colspan="4"><div class="state-box"><div class="state-icon">⚠️</div><p>${e.code==='permission-denied'?'Permission denied — check Firestore rules for ideas collection.':e.message}</p></div></td></tr>`;
+  }
 }
 
-/* ── REFERRALS — read from Firestore, show user IDs ── */
+/* ── REFERRALS ── */
 async function loadReferrals(uid){
   const tbody = document.getElementById("refBody");
   try{
-    // Try referrals collection first
-    const q = query(collection(db,"referrals"), where("referrerId","==",uid), orderBy("createdAt","desc"));
-    const snap = await getDocs(q);
-    if(snap.empty){
-      // Fallback: check users collection for referredBy field
-      const usersSnap = await getDocs(query(collection(db,"users"), where("referredBy","==",uid)));
-      if(usersSnap.empty){ tbody.innerHTML=empty("No referrals found in database.",4); return; }
-      tbody.innerHTML = usersSnap.docs.map(d=>{
-        const u = d.data();
-        const st = (u.referralStatus||u.verified?"verified":"unverified").toLowerCase();
+    // Android app stores referrals as doc at referrals/{userId}
+    const refSnap = await getDoc(doc(db,"referrals",uid));
+    if(!refSnap.exists()){
+      tbody.innerHTML=`<tr><td colspan="4"><div class="state-box"><div class="state-icon">📭</div><p>No referrals yet.</p></div></td></tr>`;
+      document.getElementById("refCountDisplay").textContent = "0";
+      return;
+    }
+    const data = refSnap.data();
+    // referrals doc may contain a list or subcollection
+    // Try subcollection first: referrals/{uid}/referredUsers
+    const subSnap = await getDocs(collection(db,"referrals",uid,"referredUsers"));
+    if(!subSnap.empty){
+      const verified = subSnap.docs.filter(d=>d.data().status==="verified"||d.data().isVerified);
+      document.getElementById("refCountDisplay").textContent = verified.length;
+      tbody.innerHTML = subSnap.docs.map(d=>{
+        const r  = d.data();
+        const st = (r.status||(r.isVerified?"verified":"unverified")).toLowerCase();
         return `<tr>
-          <td style="font-family:monospace;font-size:0.78rem;color:var(--sub)">${d.id}</td>
-          <td>${u.username||u.name||u.email||"—"}</td>
-          <td>${fmtDate(u.createdAt)}</td>
+          <td style="font-family:monospace;font-size:0.78rem;color:var(--sub)">${r.referredUid||r.uid||d.id}</td>
+          <td>${r.name||r.email||r.referredEmail||"—"}</td>
+          <td>${fmtDate(r.createdAt||r.joinedAt||r.timestamp)}</td>
           <td><span class="badge ${st}">${st.charAt(0).toUpperCase()+st.slice(1)}</span></td>
         </tr>`;
       }).join("");
       return;
     }
-    tbody.innerHTML = snap.docs.map(d=>{
-      const r = d.data();
-      const st = (r.status||"unverified").toLowerCase();
-      return `<tr>
-        <td style="font-family:monospace;font-size:0.78rem;color:var(--sub)">${r.referredUserId||r.referredId||d.id}</td>
-        <td>${r.referredName||r.referredEmail||"—"}</td>
-        <td>${fmtDate(r.createdAt)}</td>
-        <td><span class="badge ${st}">${st.charAt(0).toUpperCase()+st.slice(1)}</span></td>
-      </tr>`;
-    }).join("");
+    // Fallback: referrals doc fields directly (array or count)
+    const count = data.referralCount||data.count||data.total||0;
+    document.getElementById("refCountDisplay").textContent = count;
+    tbody.innerHTML = `<tr><td colspan="4"><div class="state-box"><div class="state-icon">📭</div><p>Referral details not available. Total verified: ${count}</p></div></td></tr>`;
   }catch(e){
-    tbody.innerHTML = errRow("Could not load referrals. Check Firestore rules.",4);
-    console.error(e);
+    console.error("loadReferrals",e.code,e.message);
+    tbody.innerHTML = `<tr><td colspan="4"><div class="state-box"><div class="state-icon">⚠️</div><p>${e.code==='permission-denied'?'Permission denied — check Firestore rules for referrals collection.':e.message}</p></div></td></tr>`;
   }
 }
 
 /* ── POINTS HISTORY ── */
 async function loadPointsHistory(uid){
-  const box=document.getElementById("historyList");
+  const box = document.getElementById("historyList");
   try{
-    const q=query(collection(db,"pointsHistory"),where("userId","==",uid),orderBy("createdAt","desc"),limit(50));
-    const snap=await getDocs(q);
-    if(snap.empty){ box.innerHTML=`<div class="state-box"><div class="state-icon">📭</div><p>No points history yet.</p></div>`; return; }
-    box.innerHTML=snap.docs.map(d=>{
-      const h=d.data();
-      return `<div class="hist-item">
-        <div><div class="hist-act">${h.activity||h.type||"Activity"}</div><div class="hist-meta">${fmtDT(h.createdAt)} · <span class="badge ${h.status||"verified"}">${h.status||"verified"}</span></div></div>
-        <div class="hist-pts">+${h.points||0} pts</div>
-      </div>`;
-    }).join("");
-  }catch(e){ box.innerHTML=`<div class="state-box"><div class="state-icon">⚠️</div><p>Could not load history.</p></div>`; console.error(e); }
+    // Android app stores transactions as subcollection: users/{uid}/transactions
+    const snap = await getDocs(
+      query(collection(db,"users",uid,"transactions"), limit(50))
+    );
+    if(!snap.empty){
+      const sorted = snap.docs.sort((a,b)=>(b.data().createdAt?.seconds||0)-(a.data().createdAt?.seconds||0));
+      box.innerHTML = sorted.map(d=>{
+        const h  = d.data();
+        const st = h.status||"verified";
+        const pts = h.points||h.amount||h.coins||0;
+        return `<div class="hist-item">
+          <div>
+            <div class="hist-act">${h.activity||h.type||h.description||h.title||"Activity"}</div>
+            <div class="hist-meta">${fmtDT(h.createdAt||h.timestamp||h.date)} · <span class="badge ${st}">${st}</span></div>
+          </div>
+          <div class="hist-pts">+${pts} pts</div>
+        </div>`;
+      }).join("");
+      return;
+    }
+    // Fallback: root pointsHistory collection
+    const snap2 = await getDocs(query(collection(db,"pointsHistory"), where("userId","==",uid), limit(50)));
+    if(!snap2.empty){
+      const sorted2 = snap2.docs.sort((a,b)=>(b.data().createdAt?.seconds||0)-(a.data().createdAt?.seconds||0));
+      box.innerHTML = sorted2.map(d=>{
+        const h  = d.data();
+        const st = h.status||"verified";
+        return `<div class="hist-item">
+          <div>
+            <div class="hist-act">${h.activity||h.type||h.description||"Activity"}</div>
+            <div class="hist-meta">${fmtDT(h.createdAt||h.timestamp)} · <span class="badge ${st}">${st}</span></div>
+          </div>
+          <div class="hist-pts">+${h.points||h.amount||0} pts</div>
+        </div>`;
+      }).join("");
+      return;
+    }
+    box.innerHTML = `<div class="state-box"><div class="state-icon">📭</div><p>No points history yet.</p></div>`;
+  }catch(e){
+    console.error("loadPointsHistory",e.code,e.message);
+    box.innerHTML = `<div class="state-box"><div class="state-icon">⚠️</div><p>${e.code==='permission-denied'?'Permission denied — check Firestore rules for transactions subcollection.':e.message}</p></div>`;
+  }
 }
 
 /* ── PRIZE TABLE ── */
