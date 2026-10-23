@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ManIdea Dashboard</title>
+<style>
+:root{--gold:#f5c518;--navy:#0d1b2a;--navy2:#1a2d42;--navy3:#243447;--text:#e8eaf0;--sub:#8a9bb0;--card:#1e3048;--red:#e53e3e;--green:#38a169;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--navy);color:var(--text);font-family:'Segoe UI',sans-serif;min-height:100vh;}
+a{color:inherit;text-decoration:none;}
+
+/* NAV */
+nav{background:var(--navy2);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;border-bottom:2px solid var(--gold);position:sticky;top:0;z-index:100;}
+.nav-logo{font-size:1.4rem;font-weight:700;color:var(--gold);letter-spacing:1px;}
+.nav-right{display:flex;align-items:center;gap:16px;}
+.notif-btn{background:none;border:none;color:var(--text);font-size:1.3rem;cursor:pointer;position:relative;}
+.notif-dot{position:absolute;top:0;right:0;width:8px;height:8px;background:var(--red);border-radius:50%;}
+.profile-wrap{position:relative;}
+.profile-btn{display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;color:var(--text);}
+.profile-btn img{width:36px;height:36px;border-radius:50%;border:2px solid var(--gold);object-fit:cover;}
+.profile-btn span{font-size:0.9rem;}
+.dropdown{display:none;position:absolute;right:0;top:48px;background:var(--navy3);border:1px solid var(--gold);border-radius:8px;min-width:160px;overflow:hidden;z-index:200;}
+.dropdown.open{display:block;}
+.dropdown a,.dropdown button{display:block;width:100%;padding:12px 16px;text-align:left;background:none;border:none;color:var(--text);font-size:0.9rem;cursor:pointer;}
+.dropdown a:hover,.dropdown button:hover{background:var(--navy2);}
+
+/* MAIN */
+main{max-width:1100px;margin:0 auto;padding:24px 16px;}
+
+/* WELCOME */
+.welcome{background:linear-gradient(135deg,var(--navy2),var(--navy3));border:1px solid var(--gold);border-radius:12px;padding:24px;margin-bottom:24px;}
+.welcome h1{font-size:1.5rem;color:var(--gold);}
+.welcome p{color:var(--sub);margin-top:4px;font-size:0.95rem;}
+.challenge-info{display:flex;flex-wrap:wrap;gap:16px;margin-top:16px;}
+.cinfo{background:var(--navy);border-radius:8px;padding:12px 18px;flex:1;min-width:140px;}
+.cinfo label{font-size:0.75rem;color:var(--sub);display:block;margin-bottom:4px;}
+.cinfo span{font-size:1rem;font-weight:600;color:var(--gold);}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;margin-bottom:24px;}
+.stat-card{background:var(--card);border-radius:12px;padding:20px;border:1px solid var(--navy3);text-align:center;}
+.stat-card .val{font-size:1.8rem;font-weight:700;color:var(--gold);}
+.stat-card .lbl{font-size:0.78rem;color:var(--sub);margin-top:4px;}
+
+/* QUICK ACTIONS */
+.section-title{font-size:1.1rem;font-weight:600;color:var(--gold);margin-bottom:14px;}
+.actions-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:24px;}
+.action-card{background:var(--card);border:1px solid var(--navy3);border-radius:12px;padding:18px 12px;text-align:center;cursor:pointer;transition:border-color .2s,transform .2s;}
+.action-card:hover{border-color:var(--gold);transform:translateY(-2px);}
+.action-card .icon{font-size:1.8rem;margin-bottom:8px;}
+.action-card .name{font-size:0.8rem;color:var(--sub);}
+
+/* REFERRAL */
+.referral-box{background:var(--card);border:1px solid var(--navy3);border-radius:12px;padding:20px;margin-bottom:24px;}
+.ref-link-row{display:flex;gap:8px;margin:12px 0;}
+.ref-link-row input{flex:1;background:var(--navy);border:1px solid var(--navy3);border-radius:8px;padding:10px 12px;color:var(--text);font-size:0.85rem;outline:none;}
+.btn-gold{background:var(--gold);color:#000;border:none;border-radius:8px;padding:10px 18px;font-weight:600;cursor:pointer;font-size:0.85rem;}
+.btn-gold:hover{opacity:.9;}
+.btn-outline{background:none;border:1px solid var(--gold);color:var(--gold);border-radius:8px;padding:10px 18px;font-weight:600;cursor:pointer;font-size:0.85rem;}
+
+/* IDEAS TABLE */
+.ideas-box{background:var(--card);border:1px solid var(--navy3);border-radius:12px;padding:20px;margin-bottom:24px;overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+th{color:var(--sub);text-align:left;padding:8px 10px;border-bottom:1px solid var(--navy3);}
+td{padding:10px;border-bottom:1px solid var(--navy3);vertical-align:middle;}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;}
+.badge.approved{background:#1a4731;color:var(--green);}
+.badge.pending{background:#3d2e00;color:#f6c90e;}
+.badge.rejected{background:#3d1a1a;color:var(--red);}
+
+/* LEADERBOARD */
+.lb-box{background:var(--card);border:1px solid var(--navy3);border-radius:12px;padding:20px;margin-bottom:24px;}
+.lb-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--navy3);}
+.lb-row:last-child{border-bottom:none;}
+.lb-rank{width:28px;font-weight:700;color:var(--gold);text-align:center;}
+.lb-avatar{width:36px;height:36px;border-radius:50%;border:2px solid var(--navy3);object-fit:cover;background:var(--navy2);}
+.lb-name{flex:1;font-size:0.9rem;}
+.lb-pts{font-weight:600;color:var(--gold);font-size:0.9rem;}
+.lb-prize{font-size:0.78rem;color:var(--sub);margin-left:8px;}
+
+/* POINTS HISTORY */
+.history-box{background:var(--card);border:1px solid var(--navy3);border-radius:12px;padding:20px;margin-bottom:24px;}
+.hist-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--navy3);font-size:0.85rem;}
+.hist-row:last-child{border-bottom:none;}
+.hist-pts{font-weight:700;color:var(--green);}
+
+/* LOADING / EMPTY */
+.loading{text-align:center;padding:40px;color:var(--sub);}
+.empty{text-align:center;padding:24px;color:var(--sub);font-size:0.9rem;}
+
+@media(max-width:600px){
+  .challenge-info{flex-direction:column;}
+  .stats-grid{grid-template-columns:repeat(2,1fr);}
+  .actions-grid{grid-template-columns:repeat(2,1fr);}
+  nav .profile-btn span{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">💡 ManIdea</div>
+  <div class="nav-right">
+    <button class="notif-btn" title="Notifications">🔔<span class="notif-dot"></span></button>
+    <div class="profile-wrap">
+      <button class="profile-btn" id="profileBtn">
+        <img id="navAvatar" src="https://ui-avatars.com/api/?background=f5c518&color=000&name=U" alt="avatar"/>
+        <span id="navUsername">...</span> ▾
+      </button>
+      <div class="dropdown" id="dropdown">
+        <a href="#">👤 My Profile</a>
+        <a href="#">⚙️ Settings</a>
+        <button id="logoutBtn">🚪 Logout</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <!-- WELCOME -->
+  <div class="welcome">
+    <h1 id="welcomeMsg">Welcome back!</h1>
+    <p>45-Day Ideas Championship</p>
+    <div class="challenge-info">
+      <div class="cinfo"><label>Start Date</label><span id="startDate">—</span></div>
+      <div class="cinfo"><label>End Date</label><span id="endDate">—</span></div>
+      <div class="cinfo"><label>Days Remaining</label><span id="countdown">—</span></div>
+      <div class="cinfo"><label>Your Rank</label><span id="welcomeRank">—</span></div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="section-title">📊 Your Statistics</div>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="val" id="statPoints">—</div><div class="lbl">Total Points</div></div>
+    <div class="stat-card"><div class="val" id="statIdeas">—</div><div class="lbl">Approved Ideas</div></div>
+    <div class="stat-card"><div class="val" id="statReferrals">—</div><div class="lbl">Verified Referrals</div></div>
+    <div class="stat-card"><div class="val" id="statWatched">—</div><div class="lbl">Ideas Watched</div></div>
+    <div class="stat-card"><div class="val" id="statRank">—</div><div class="lbl">Current Rank</div></div>
+    <div class="stat-card"><div class="val" id="statPrize">—</div><div class="lbl">Potential Prize</div></div>
+  </div>
+
+  <!-- QUICK ACTIONS -->
+  <div class="section-title">⚡ Quick Actions</div>
+  <div class="actions-grid">
+    <div class="action-card"><div class="icon">💡</div><div class="name">Post a New Idea</div></div>
+    <div class="action-card"><div class="icon">🔍</div><div class="name">Explore Ideas</div></div>
+    <div class="action-card"><div class="icon">👥</div><div class="name">Invite Friends</div></div>
+    <div class="action-card"><div class="icon">🏆</div><div class="name">View Leaderboard</div></div>
+    <div class="action-card"><div class="icon">📋</div><div class="name">My Posted Ideas</div></div>
+    <div class="action-card"><div class="icon">🔗</div><div class="name">Referral History</div></div>
+    <div class="action-card"><div class="icon">📈</div><div class="name">Points History</div></div>
+    <div class="action-card"><div class="icon">📜</div><div class="name">Challenge Rules</div></div>
+  </div>
+
+  <!-- REFERRAL -->
+  <div class="section-title">🔗 Your Referral Link</div>
+  <div class="referral-box">
+    <p style="color:var(--sub);font-size:0.85rem;margin-bottom:8px;">Share your unique link. Earn 300 points per verified referral.</p>
+    <div class="ref-link-row">
+      <input type="text" id="refLink" readonly placeholder="Generating your link..."/>
+      <button class="btn-gold" id="copyRefBtn">Copy</button>
+      <button class="btn-outline" id="shareRefBtn">Share</button>
+    </div>
+    <p style="font-size:0.82rem;color:var(--sub);">Verified Referrals: <strong id="refCount" style="color:var(--gold)">—</strong></p>
+  </div>
+
+  <!-- MY IDEAS -->
+  <div class="section-title">💡 My Ideas</div>
+  <div class="ideas-box">
+    <table>
+      <thead><tr><th>Title</th><th>Submitted</th><th>Status</th><th>Points</th></tr></thead>
+      <tbody id="ideasBody"><tr><td colspan="4" class="loading">Loading ideas...</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="section-title">🏆 Top 10 Leaderboard</div>
+  <div class="lb-box" id="lbBox"><div class="loading">Loading leaderboard...</div></div>
+  <div style="text-align:center;margin-bottom:24px;">
+    <button class="btn-outline" id="viewTop30Btn">View Top 30</button>
+  </div>
+
+  <!-- POINTS HISTORY -->
+  <div class="section-title">📈 Points History</div>
+  <div class="history-box" id="historyBox"><div class="loading">Loading history...</div></div>
+
+</main>
+
+<!-- TOP 30 MODAL -->
+<div id="top30Modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;overflow-y:auto;padding:24px;">
+  <div style="background:var(--navy2);border:1px solid var(--gold);border-radius:12px;max-width:600px;margin:0 auto;padding:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <span style="font-size:1.1rem;font-weight:600;color:var(--gold);">🏆 Full Championship Leaderboard</span>
+      <button id="closeModal" style="background:none;border:none;color:var(--text);font-size:1.4rem;cursor:pointer;">✕</button>
+    </div>
+    <div id="top30Box"><div class="loading">Loading...</div></div>
+  </div>
+</div>
+
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, collection, query, where, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyClnTEDA7hCNJPAN8RXl8MB3WBReBxYKRE",
+  authDomain: "manidea-b87c3.firebaseapp.com",
+  projectId: "manidea-b87c3",
+  storageBucket: "manidea-b87c3.firebasestorage.app",
+  messagingSenderId: "416933820616",
+  appId: "1:416933820616:web:c214c0b856f6a6adbecdfd",
+  measurementId: "G-HT5CZH2MDZ"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Prize structure
+function getPrize(rank) {
+  if (rank === 1) return "₹9,000";
+  if (rank === 2) return "₹7,000";
+  if (rank === 3) return "₹5,000";
+  if (rank >= 4 && rank <= 20) return "₹150";
+  if (rank >= 21 && rank <= 30) return "₹50";
+  return "—";
+}
+
+function calcPoints(watched, referrals, ideas) {
+  return (watched * 10) + (referrals * 300) + (ideas * 100);
+}
+
+function formatDate(ts) {
+  if (!ts) return "—";
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+// Challenge dates — update these to match your actual challenge
+const CHALLENGE_START = new Date("2025-06-01");
+const CHALLENGE_END = new Date("2025-07-15");
+
+function setChallengeDates() {
+  document.getElementById("startDate").textContent = CHALLENGE_START.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  document.getElementById("endDate").textContent = CHALLENGE_END.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  const now = new Date();
+  const diff = Math.ceil((CHALLENGE_END - now) / (1000 * 60 * 60 * 24));
+  document.getElementById("countdown").textContent = diff > 0 ? diff + " days" : "Ended";
+}
+
+// Auth guard
+onAuthStateChanged(auth, async (user) => {
+  if (!user) { window.location.href = "index.html"; return; }
+  setChallengeDates();
+  await loadUserData(user);
+  await loadLeaderboard(30);
+  await loadPointsHistory(user.uid);
+});
+
+async function loadUserData(user) {
+  const uid = user.uid;
+
+  // Load user doc
+  const userSnap = await getDoc(doc(db, "users", uid));
+  const userData = userSnap.exists() ? userSnap.data() : {};
+
+  const username = userData.username || userData.name || user.email.split("@")[0];
+  const photoURL = userData.photoURL || user.photoURL || `https://ui-avatars.com/api/?background=f5c518&color=000&name=${encodeURIComponent(username)}`;
+
+  document.getElementById("welcomeMsg").textContent = `Welcome back, ${username}!`;
+  document.getElementById("navUsername").textContent = username;
+  document.getElementById("navAvatar").src = photoURL;
+
+  // Stats from user doc (adjust field names to match your Android app schema)
+  const watched = userData.ideasWatched || userData.watched || 0;
+  const referrals = userData.verifiedReferrals || userData.referrals || 0;
+  const approvedIdeas = userData.approvedIdeas || userData.ideas || 0;
+  const totalPoints = userData.totalPoints || calcPoints(watched, referrals, approvedIdeas);
+  const rank = userData.rank || "—";
+
+  document.getElementById("statPoints").textContent = totalPoints;
+  document.getElementById("statIdeas").textContent = approvedIdeas;
+  document.getElementById("statReferrals").textContent = referrals;
+  document.getElementById("statWatched").textContent = watched;
+  document.getElementById("statRank").textContent = rank;
+  document.getElementById("statPrize").textContent = typeof rank === "number" ? getPrize(rank) : "—";
+  document.getElementById("welcomeRank").textContent = typeof rank === "number" ? "#" + rank : "—";
+
+  // Referral link
+  const refCode = userData.referralCode || uid.slice(0, 8);
+  const refLink = `${window.location.origin}/index.html?ref=${refCode}`;
+  document.getElementById("refLink").value = refLink;
+  document.getElementById("refCount").textContent = referrals;
+
+  // Load user's ideas
+  await loadMyIdeas(uid);
+}
+
+async function loadMyIdeas(uid) {
+  const tbody = document.getElementById("ideasBody");
+  try {
+    const q = query(collection(db, "ideas"), where("userId", "==", uid), orderBy("createdAt", "desc"));
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      tbody.innerHTML = `<tr><td colspan="4" class="empty">No ideas posted yet.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = snap.docs.map(d => {
+      const idea = d.data();
+      const status = (idea.status || "pending").toLowerCase();
+      const pts = status === "approved" ? 100 : 0;
+      return `<tr>
+        <td>${idea.title || "Untitled"}</td>
+        <td>${formatDate(idea.createdAt)}</td>
+        <td><span class="badge ${status}">${status.charAt(0).toUpperCase()+status.slice(1)}</span></td>
+        <td>${status === "approved" ? "+"+pts : "—"}</td>
+      </tr>`;
+    }).join("");
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="4" class="empty">Could not load ideas. Check Firestore rules.</td></tr>`;
+    console.error(e);
+  }
+}
+
+async function loadLeaderboard(count) {
+  const lbBox = document.getElementById("lbBox");
+  const top30Box = document.getElementById("top30Box");
+  try {
+    const q = query(collection(db, "users"), orderBy("totalPoints", "desc"), limit(count));
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      lbBox.innerHTML = `<div class="empty">No leaderboard data yet.</div>`;
+      return;
+    }
+    const rows = snap.docs.map((d, i) => {
+      const u = d.data();
+      const rank = i + 1;
+      const name = u.username || u.name || "Member";
+      const pts = u.totalPoints || 0;
+      const avatar = u.photoURL || `https://ui-avatars.com/api/?background=1e3048&color=f5c518&name=${encodeURIComponent(name)}`;
+      const medal = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : rank;
+      return `<div class="lb-row">
+        <div class="lb-rank">${medal}</div>
+        <img class="lb-avatar" src="${avatar}" alt="${name}"/>
+        <div class="lb-name">${name}</div>
+        <div class="lb-pts">${pts} pts</div>
+        <div class="lb-prize">${getPrize(rank)} <span style="font-size:0.7rem;color:#666">(provisional)</span></div>
+      </div>`;
+    });
+    lbBox.innerHTML = rows.slice(0, 10).join("");
+    top30Box.innerHTML = rows.join("");
+  } catch (e) {
+    lbBox.innerHTML = `<div class="empty">Could not load leaderboard. Check Firestore rules.</div>`;
+    console.error(e);
+  }
+}
+
+async function loadPointsHistory(uid) {
+  const box = document.getElementById("historyBox");
+  try {
+    const q = query(collection(db, "pointsHistory"), where("userId", "==", uid), orderBy("createdAt", "desc"), limit(20));
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      box.innerHTML = `<div class="empty">No points history yet.</div>`;
+      return;
+    }
+    box.innerHTML = snap.docs.map(d => {
+      const h = d.data();
+      return `<div class="hist-row">
+        <div>
+          <div style="font-weight:500">${h.activity || h.type || "Activity"}</div>
+          <div style="font-size:0.75rem;color:var(--sub)">${formatDate(h.createdAt)} · ${h.status || "verified"}</div>
+        </div>
+        <div class="hist-pts">+${h.points || 0} pts</div>
+      </div>`;
+    }).join("");
+  } catch (e) {
+    box.innerHTML = `<div class="empty">Could not load history. Check Firestore rules.</div>`;
+    console.error(e);
+  }
+}
+
+// Profile dropdown
+document.getElementById("profileBtn").addEventListener("click", () => {
+  document.getElementById("dropdown").classList.toggle("open");
+});
+document.addEventListener("click", (e) => {
+  if (!document.getElementById("profileBtn").contains(e.target))
+    document.getElementById("dropdown").classList.remove("open");
+});
+
+// Logout
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+  await signOut(auth);
+  window.location.href = "index.html";
+});
+
+// Copy referral link
+document.getElementById("copyRefBtn").addEventListener("click", () => {
+  const val = document.getElementById("refLink").value;
+  navigator.clipboard.writeText(val).then(() => {
+    document.getElementById("copyRefBtn").textContent = "Copied!";
+    setTimeout(() => document.getElementById("copyRefBtn").textContent = "Copy", 2000);
+  });
+});
+
+// Share referral link
+document.getElementById("shareRefBtn").addEventListener("click", () => {
+  const val = document.getElementById("refLink").value;
+  if (navigator.share) {
+    navigator.share({ title: "Join ManIdea!", text: "Join the 45-Day Ideas Championship!", url: val });
+  } else {
+    navigator.clipboard.writeText(val);
+    alert("Link copied to clipboard!");
+  }
+});
+
+// Top 30 modal
+document.getElementById("viewTop30Btn").addEventListener("click", () => {
+  document.getElementById("top30Modal").style.display = "block";
+});
+document.getElementById("closeModal").addEventListener("click", () => {
+  document.getElementById("top30Modal").style.display = "none";
+});
+</script>
+</body>
+</html>

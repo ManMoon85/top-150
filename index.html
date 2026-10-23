@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f0f2f5;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .card {
+      background: #fff;
+      padding: 40px 36px;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 380px;
+    }
+
+    h2 {
+      margin-bottom: 24px;
+      font-size: 1.6rem;
+      color: #1a1a1a;
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: #555;
+      margin-bottom: 6px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      margin-bottom: 18px;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    input:focus { border-color: #4f46e5; }
+
+    button {
+      width: 100%;
+      padding: 11px;
+      background: #4f46e5;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover { background: #4338ca; }
+
+    .password-wrapper {
+      position: relative;
+      margin-bottom: 18px;
+    }
+
+    .password-wrapper input {
+      margin-bottom: 0;
+      padding-right: 42px;
+    }
+
+    .toggle-eye {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #888;
+      font-size: 1.1rem;
+      user-select: none;
+    }
+
+    #error {
+      color: #e53e3e;
+      font-size: 0.85rem;
+      margin-top: 12px;
+      text-align: center;
+      min-height: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>Login</h2>
+    <label>Email</label>
+    <input type="email" id="email" placeholder="you@example.com" />
+    <label>Password</label>
+    <div class="password-wrapper">
+      <input type="password" id="password" placeholder="••••••••" />
+      <span class="toggle-eye" id="togglePwd">👁️</span>
+    </div>
+    <button id="loginBtn">Login</button>
+    <p id="error"></p>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyClnTEDA7hCNJPAN8RXl8MB3WBReBxYKRE",
+      authDomain: "manidea-b87c3.firebaseapp.com",
+      projectId: "manidea-b87c3",
+      storageBucket: "manidea-b87c3.firebasestorage.app",
+      messagingSenderId: "416933820616",
+      appId: "1:416933820616:web:c214c0b856f6a6adbecdfd",
+      measurementId: "G-HT5CZH2MDZ"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const pwd = document.getElementById("password");
+    document.getElementById("togglePwd").addEventListener("click", () => {
+      pwd.type = pwd.type === "password" ? "text" : "password";
+    });
+
+    document.getElementById("loginBtn").addEventListener("click", async () => {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const errorEl = document.getElementById("error");
+      errorEl.textContent = "";
+
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        window.location.href = "dashboard.html";
+      } catch (err) {
+        errorEl.textContent = err.message;
+      }
+    });
+  </script>
+
+</body>
+</html>
