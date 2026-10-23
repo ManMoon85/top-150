@@ -347,21 +347,12 @@ button{cursor:pointer;font-family:inherit;}
     <div class="page" id="page-my-referrals">
       <div class="page-title">🔗 My Referrals</div>
       <div class="section-card">
-        <h3>Your Referral Link</h3>
-        <p style="font-size:0.85rem;color:var(--sub);margin-bottom:10px;">Share this link. Earn <strong>300 points</strong> per verified referral.</p>
-        <div class="ref-link-box">
-          <input type="text" id="refLinkInput" readonly placeholder="Generating…"/>
-          <button class="btn-primary" id="copyRefBtn">Copy</button>
-          <button class="btn-secondary" id="shareRefBtn">Share</button>
-        </div>
-        <p style="font-size:0.82rem;color:var(--sub);">Verified Referrals: <strong id="refCountDisplay" style="color:var(--green)">—</strong></p>
-      </div>
-      <div class="section-card">
         <h3>Referred Members</h3>
+        <p style="font-size:0.82rem;color:var(--sub);margin-bottom:12px;">Verified Referrals: <strong id="refCountDisplay" style="color:var(--green)">—</strong></p>
         <div class="table-wrap" style="border:none;box-shadow:none;">
           <table class="data-table">
-            <thead><tr><th>Name</th><th>Joined</th><th>Status</th></tr></thead>
-            <tbody id="refBody"><tr><td colspan="3" class="state-box"><div class="spinner"></div></td></tr></tbody>
+            <thead><tr><th>User ID</th><th>Name / Email</th><th>Joined</th><th>Status</th></tr></thead>
+            <tbody id="refBody"><tr><td colspan="4" class="state-box"><div class="spinner"></div></td></tr></tbody>
           </table>
         </div>
       </div>
@@ -577,32 +568,49 @@ async function loadAllMembers(){
     const snap = await getDocs(collection(db,"users"));
     allMembers = snap.docs.map(d=>{
       const u=d.data();
-      const w=u.ideasWatched||u.watched||0;
-      const r=u.verifiedReferrals||u.referrals||0;
-      const a=u.approvedIdeas||u.ideas||0;
-      return { uid:d.id, name:u.username||u.name||"Member", photo:u.photoURL||"", w, r, a, pts:calcPts(w,r,a), createdAt:u.createdAt };
-    }).sort((a,b)=>b.pts-a.pts || (a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));
+      // Read directly from Firestore fields — no fallback calculation
+      const w = Number(u.ideasWatched  ?? u.watched    ?? 0);
+      const r = Number(u.verifiedReferrals ?? u.referrals ?? 0);
+      const a = Number(u.approvedIdeas ?? u.ideas      ?? 0);
+      const pts = calcPts(w,r,a);
+      return {
+        uid: d.id,
+        name: u.username||u.name||u.email||"Member",
+        email: u.email||"",
+        photo: u.photoURL||"",
+        w, r, a, pts,
+        createdAt: u.createdAt
+      };
+    })
+    // Sort: highest points first; tie-break by earliest registration
+    .sort((a,b) => b.pts - a.pts || (a.createdAt?.seconds||0) - (b.createdAt?.seconds||0));
   }catch(e){ console.error("loadAllMembers",e); }
 }
 
 /* ── USER DATA + STATS ── */
 async function loadUserData(user){
   const snap = await getDoc(doc(db,"users",user.uid));
-  const u = snap.exists()?snap.data():{};
+  const u = snap.exists() ? snap.data() : {};
+
   const name    = u.username||u.name||user.email.split("@")[0];
   const photo   = u.photoURL||user.photoURL||avatar(name);
-  const watched = u.ideasWatched||u.watched||0;
-  const refs    = u.verifiedReferrals||u.referrals||0;
-  const ideas   = u.approvedIdeas||u.ideas||0;
-  const pts     = calcPts(watched,refs,ideas);
-  const rank    = allMembers.findIndex(m=>m.uid===user.uid)+1 || null;
+
+  // Read raw counts directly from Firestore
+  const watched = Number(u.ideasWatched  ?? u.watched    ?? 0);
+  const refs    = Number(u.verifiedReferrals ?? u.referrals ?? 0);
+  const ideas   = Number(u.approvedIdeas ?? u.ideas      ?? 0);
+  const pts     = calcPts(watched, refs, ideas);
+
+  // Rank = position in sorted allMembers list (1-based)
+  const rankIdx = allMembers.findIndex(m => m.uid === user.uid);
+  const rank    = rankIdx >= 0 ? rankIdx + 1 : null;
 
   // Header
-  document.getElementById("topAvatar").src   = photo;
+  document.getElementById("topAvatar").src = photo;
   document.getElementById("topUsername").textContent = name;
   document.getElementById("welcomeTitle").textContent = `Welcome back, ${name}!`;
 
-  // Stats
+  // Dashboard stats
   document.getElementById("sPoints").textContent    = pts;
   document.getElementById("sIdeas").textContent     = ideas;
   document.getElementById("sReferrals").textContent = refs;
@@ -612,16 +620,13 @@ async function loadUserData(user){
 
   // My Points page
   document.getElementById("ptTotal").textContent = pts;
-  document.getElementById("ptIdeas").textContent = ideas*100;
-  document.getElementById("ptRefs").textContent  = refs*300;
-  document.getElementById("ptWatch").textContent = watched*10;
+  document.getElementById("ptIdeas").textContent = ideas * 100;
+  document.getElementById("ptRefs").textContent  = refs  * 300;
+  document.getElementById("ptWatch").textContent = watched * 10;
 
-  // Referral link
-  const code = u.referralCode||user.uid.slice(0,8);
-  document.getElementById("refLinkInput").value = `${location.origin}/index.html?ref=${code}`;
+  // Referral count display
   document.getElementById("refCountDisplay").textContent = refs;
 
-  // Top 3
   renderTop3();
 }
 
@@ -717,23 +722,43 @@ async function loadMyIdeas(uid){
   }catch(e){ tbody.innerHTML=errRow("Could not load ideas. Check Firestore rules.",4); console.error(e); }
 }
 
-/* ── REFERRALS ── */
+/* ── REFERRALS — read from Firestore, show user IDs ── */
 async function loadReferrals(uid){
-  const tbody=document.getElementById("refBody");
+  const tbody = document.getElementById("refBody");
   try{
-    const q=query(collection(db,"referrals"),where("referrerId","==",uid),orderBy("createdAt","desc"));
-    const snap=await getDocs(q);
-    if(snap.empty){ tbody.innerHTML=empty("No referrals yet.",3); return; }
-    tbody.innerHTML=snap.docs.map(d=>{
-      const r=d.data();
-      const st=(r.status||"unverified").toLowerCase();
+    // Try referrals collection first
+    const q = query(collection(db,"referrals"), where("referrerId","==",uid), orderBy("createdAt","desc"));
+    const snap = await getDocs(q);
+    if(snap.empty){
+      // Fallback: check users collection for referredBy field
+      const usersSnap = await getDocs(query(collection(db,"users"), where("referredBy","==",uid)));
+      if(usersSnap.empty){ tbody.innerHTML=empty("No referrals found in database.",4); return; }
+      tbody.innerHTML = usersSnap.docs.map(d=>{
+        const u = d.data();
+        const st = (u.referralStatus||u.verified?"verified":"unverified").toLowerCase();
+        return `<tr>
+          <td style="font-family:monospace;font-size:0.78rem;color:var(--sub)">${d.id}</td>
+          <td>${u.username||u.name||u.email||"—"}</td>
+          <td>${fmtDate(u.createdAt)}</td>
+          <td><span class="badge ${st}">${st.charAt(0).toUpperCase()+st.slice(1)}</span></td>
+        </tr>`;
+      }).join("");
+      return;
+    }
+    tbody.innerHTML = snap.docs.map(d=>{
+      const r = d.data();
+      const st = (r.status||"unverified").toLowerCase();
       return `<tr>
-        <td>${r.referredName||r.referredEmail||"Member"}</td>
+        <td style="font-family:monospace;font-size:0.78rem;color:var(--sub)">${r.referredUserId||r.referredId||d.id}</td>
+        <td>${r.referredName||r.referredEmail||"—"}</td>
         <td>${fmtDate(r.createdAt)}</td>
         <td><span class="badge ${st}">${st.charAt(0).toUpperCase()+st.slice(1)}</span></td>
       </tr>`;
     }).join("");
-  }catch(e){ tbody.innerHTML=errRow("Could not load referrals. Check Firestore rules.",3); console.error(e); }
+  }catch(e){
+    tbody.innerHTML = errRow("Could not load referrals. Check Firestore rules.",4);
+    console.error(e);
+  }
 }
 
 /* ── POINTS HISTORY ── */
@@ -773,19 +798,7 @@ function renderPrizeTable(){
     </tr>`).join("");
 }
 
-/* ── COPY / SHARE REFERRAL ── */
-document.getElementById("copyRefBtn").addEventListener("click",()=>{
-  const v=document.getElementById("refLinkInput").value;
-  navigator.clipboard.writeText(v).then(()=>{
-    const btn=document.getElementById("copyRefBtn");
-    btn.textContent="Copied!"; setTimeout(()=>btn.textContent="Copy",2000);
-  });
-});
-document.getElementById("shareRefBtn").addEventListener("click",()=>{
-  const v=document.getElementById("refLinkInput").value;
-  if(navigator.share) navigator.share({title:"Join ManIdea!",text:"Join the 45-Day Ideas Championship!",url:v});
-  else { navigator.clipboard.writeText(v); alert("Link copied!"); }
-});
+/* ── COPY / SHARE — removed referral link section, no-op kept for safety ── */
 </script>
 </body>
 </html>
