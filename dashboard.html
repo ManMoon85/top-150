@@ -3,469 +3,788 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>ManIdea Dashboard</title>
+<title>ManIdea — Member Dashboard</title>
 <style>
-:root{--gold:#f5c518;--navy:#0d1b2a;--navy2:#1a2d42;--navy3:#243447;--text:#e8eaf0;--sub:#8a9bb0;--card:#1e3048;--red:#e53e3e;--green:#38a169;}
+/* ── RESET & TOKENS ─────────────────────────────── */
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--navy);color:var(--text);font-family:'Segoe UI',sans-serif;min-height:100vh;}
-a{color:inherit;text-decoration:none;}
+:root{
+  --navy:#0f1f35;--navy2:#162840;--navy3:#1e3554;--navy4:#243d63;
+  --purple:#6c63ff;--blue:#3b82f6;--gold:#f5c518;--gold2:#e6b800;
+  --green:#22c55e;--red:#ef4444;--orange:#f97316;
+  --bg:#f0f4f8;--bg2:#e8edf4;--white:#ffffff;
+  --text:#1e293b;--sub:#64748b;--border:#cbd5e1;
+  --sidebar-w:240px;
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;}
+a{text-decoration:none;color:inherit;}
+button{cursor:pointer;font-family:inherit;}
 
-/* NAV */
-nav{background:var(--navy2);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;border-bottom:2px solid var(--gold);position:sticky;top:0;z-index:100;}
-.nav-logo{font-size:1.4rem;font-weight:700;color:var(--gold);letter-spacing:1px;}
-.nav-right{display:flex;align-items:center;gap:16px;}
-.notif-btn{background:none;border:none;color:var(--text);font-size:1.3rem;cursor:pointer;position:relative;}
-.notif-dot{position:absolute;top:0;right:0;width:8px;height:8px;background:var(--red);border-radius:50%;}
-.profile-wrap{position:relative;}
-.profile-btn{display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;color:var(--text);}
-.profile-btn img{width:36px;height:36px;border-radius:50%;border:2px solid var(--gold);object-fit:cover;}
-.profile-btn span{font-size:0.9rem;}
-.dropdown{display:none;position:absolute;right:0;top:48px;background:var(--navy3);border:1px solid var(--gold);border-radius:8px;min-width:160px;overflow:hidden;z-index:200;}
-.dropdown.open{display:block;}
-.dropdown a,.dropdown button{display:block;width:100%;padding:12px 16px;text-align:left;background:none;border:none;color:var(--text);font-size:0.9rem;cursor:pointer;}
-.dropdown a:hover,.dropdown button:hover{background:var(--navy2);}
+/* ── SIDEBAR ────────────────────────────────────── */
+#sidebar{
+  width:var(--sidebar-w);min-height:100vh;background:var(--navy);
+  display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;
+  z-index:200;transition:transform .3s;
+}
+.sb-logo{padding:20px 20px 16px;border-bottom:1px solid var(--navy3);}
+.sb-logo-text{font-size:1.3rem;font-weight:800;color:var(--gold);letter-spacing:.5px;}
+.sb-logo-sub{font-size:0.7rem;color:var(--sub);margin-top:2px;}
+.sb-nav{flex:1;padding:12px 0;overflow-y:auto;}
+.sb-item{display:flex;align-items:center;gap:12px;padding:12px 20px;color:#a0b4cc;font-size:0.9rem;transition:all .2s;border-left:3px solid transparent;cursor:pointer;}
+.sb-item:hover{background:var(--navy3);color:var(--white);}
+.sb-item.active{background:var(--navy3);color:var(--white);border-left-color:var(--purple);}
+.sb-item .sb-icon{font-size:1.1rem;width:22px;text-align:center;}
+.sb-item.logout-item{color:#f87171;}
+.sb-item.logout-item:hover{background:#3d1a1a;}
+.sb-footer{padding:16px 20px;border-top:1px solid var(--navy3);font-size:0.75rem;color:var(--sub);}
 
-/* MAIN */
-main{max-width:1100px;margin:0 auto;padding:24px 16px;}
+/* ── MAIN AREA ──────────────────────────────────── */
+#main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh;}
 
-/* WELCOME */
-.welcome{background:linear-gradient(135deg,var(--navy2),var(--navy3));border:1px solid var(--gold);border-radius:12px;padding:24px;margin-bottom:24px;}
-.welcome h1{font-size:1.5rem;color:var(--gold);}
-.welcome p{color:var(--sub);margin-top:4px;font-size:0.95rem;}
-.challenge-info{display:flex;flex-wrap:wrap;gap:16px;margin-top:16px;}
-.cinfo{background:var(--navy);border-radius:8px;padding:12px 18px;flex:1;min-width:140px;}
-.cinfo label{font-size:0.75rem;color:var(--sub);display:block;margin-bottom:4px;}
-.cinfo span{font-size:1rem;font-weight:600;color:var(--gold);}
+/* ── TOP BAR ────────────────────────────────────── */
+#topbar{
+  background:var(--white);border-bottom:1px solid var(--border);
+  padding:0 24px;height:60px;display:flex;align-items:center;
+  justify-content:space-between;position:sticky;top:0;z-index:100;
+  box-shadow:0 1px 4px rgba(0,0,0,.06);
+}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+#menuToggle{display:none;background:none;border:none;font-size:1.4rem;color:var(--text);}
+.search-wrap{position:relative;}
+.search-wrap input{padding:8px 12px 8px 36px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;width:220px;outline:none;background:var(--bg);color:var(--text);}
+.search-wrap input:focus{border-color:var(--purple);}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--sub);font-size:0.9rem;}
+.topbar-right{display:flex;align-items:center;gap:14px;}
+.notif-btn{background:none;border:none;font-size:1.2rem;position:relative;color:var(--sub);}
+.notif-dot{position:absolute;top:0;right:0;width:7px;height:7px;background:var(--red);border-radius:50%;}
+.user-chip{display:flex;align-items:center;gap:8px;cursor:pointer;position:relative;}
+.user-chip img{width:34px;height:34px;border-radius:50%;border:2px solid var(--purple);object-fit:cover;}
+.user-chip span{font-size:0.85rem;font-weight:500;}
+.user-dropdown{display:none;position:absolute;right:0;top:44px;background:var(--white);border:1px solid var(--border);border-radius:10px;min-width:160px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:300;}
+.user-dropdown.open{display:block;}
+.user-dropdown a,.user-dropdown button{display:block;width:100%;padding:10px 16px;font-size:0.85rem;text-align:left;background:none;border:none;color:var(--text);}
+.user-dropdown a:hover,.user-dropdown button:hover{background:var(--bg);}
 
-/* STATS */
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;margin-bottom:24px;}
-.stat-card{background:var(--card);border-radius:12px;padding:20px;border:1px solid var(--navy3);text-align:center;}
-.stat-card .val{font-size:1.8rem;font-weight:700;color:var(--gold);}
-.stat-card .lbl{font-size:0.78rem;color:var(--sub);margin-top:4px;}
+/* ── PAGE CONTENT ───────────────────────────────── */
+#content{flex:1;padding:24px;}
+.page{display:none;}
+.page.active{display:block;}
+.page-title{font-size:1.3rem;font-weight:700;color:var(--text);margin-bottom:20px;}
 
-/* QUICK ACTIONS */
-.section-title{font-size:1.1rem;font-weight:600;color:var(--gold);margin-bottom:14px;}
-.actions-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:24px;}
-.action-card{background:var(--card);border:1px solid var(--navy3);border-radius:12px;padding:18px 12px;text-align:center;cursor:pointer;transition:border-color .2s,transform .2s;}
-.action-card:hover{border-color:var(--gold);transform:translateY(-2px);}
-.action-card .icon{font-size:1.8rem;margin-bottom:8px;}
-.action-card .name{font-size:0.8rem;color:var(--sub);}
+/* ── CHAMPIONSHIP BANNER ────────────────────────── */
+.banner{
+  background:linear-gradient(135deg,var(--navy) 0%,var(--navy4) 100%);
+  border-radius:14px;padding:24px 28px;margin-bottom:24px;
+  border:1px solid var(--navy3);position:relative;overflow:hidden;
+}
+.banner::before{content:'';position:absolute;top:-40px;right:-40px;width:180px;height:180px;background:var(--purple);opacity:.08;border-radius:50%;}
+.banner-title{font-size:1.6rem;font-weight:800;color:var(--gold);letter-spacing:.5px;}
+.banner-sub{font-size:0.85rem;color:#a0b4cc;margin-top:4px;}
+.banner-meta{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px;}
+.bm-item{background:rgba(255,255,255,.06);border-radius:8px;padding:10px 16px;min-width:120px;}
+.bm-item label{font-size:0.7rem;color:#8a9bb0;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px;}
+.bm-item span{font-size:0.95rem;font-weight:600;color:var(--white);}
+.bm-item span.gold{color:var(--gold);}
+.btn-view-prizes{background:var(--gold);color:#000;border:none;border-radius:8px;padding:10px 20px;font-weight:700;font-size:0.85rem;margin-top:16px;transition:opacity .2s;}
+.btn-view-prizes:hover{opacity:.85;}
 
-/* REFERRAL */
-.referral-box{background:var(--card);border:1px solid var(--navy3);border-radius:12px;padding:20px;margin-bottom:24px;}
-.ref-link-row{display:flex;gap:8px;margin:12px 0;}
-.ref-link-row input{flex:1;background:var(--navy);border:1px solid var(--navy3);border-radius:8px;padding:10px 12px;color:var(--text);font-size:0.85rem;outline:none;}
-.btn-gold{background:var(--gold);color:#000;border:none;border-radius:8px;padding:10px 18px;font-weight:600;cursor:pointer;font-size:0.85rem;}
-.btn-gold:hover{opacity:.9;}
-.btn-outline{background:none;border:1px solid var(--gold);color:var(--gold);border-radius:8px;padding:10px 18px;font-weight:600;cursor:pointer;font-size:0.85rem;}
+/* ── STAT CARDS ─────────────────────────────────── */
+.stats-row{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:24px;}
+.stat-card{background:var(--white);border-radius:12px;padding:18px 14px;border:1px solid var(--border);text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.04);transition:transform .2s,box-shadow .2s;}
+.stat-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.08);}
+.stat-card .s-val{font-size:1.7rem;font-weight:800;color:var(--navy);}
+.stat-card .s-lbl{font-size:0.72rem;color:var(--sub);margin-top:4px;font-weight:500;}
+.stat-card.highlight .s-val{color:var(--purple);}
+.stat-card.gold-card .s-val{color:var(--gold2);}
 
-/* IDEAS TABLE */
-.ideas-box{background:var(--card);border:1px solid var(--navy3);border-radius:12px;padding:20px;margin-bottom:24px;overflow-x:auto;}
-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
-th{color:var(--sub);text-align:left;padding:8px 10px;border-bottom:1px solid var(--navy3);}
-td{padding:10px;border-bottom:1px solid var(--navy3);vertical-align:middle;}
-.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;}
-.badge.approved{background:#1a4731;color:var(--green);}
-.badge.pending{background:#3d2e00;color:#f6c90e;}
-.badge.rejected{background:#3d1a1a;color:var(--red);}
+/* ── TOP 3 WINNERS ──────────────────────────────── */
+.top3-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;}
+.winner-card{border-radius:14px;padding:20px;text-align:center;border:2px solid transparent;transition:transform .2s;}
+.winner-card:hover{transform:translateY(-3px);}
+.winner-card.gold-w{background:linear-gradient(135deg,#2a2000,#3d3000);border-color:var(--gold);}
+.winner-card.silver-w{background:linear-gradient(135deg,#1a1f2e,#252d3d);border-color:#94a3b8;}
+.winner-card.bronze-w{background:linear-gradient(135deg,#2a1500,#3d2000);border-color:#cd7f32;}
+.winner-medal{font-size:2rem;margin-bottom:8px;}
+.winner-avatar{width:56px;height:56px;border-radius:50%;object-fit:cover;margin:0 auto 8px;display:block;border:3px solid rgba(255,255,255,.2);}
+.winner-name{font-weight:700;font-size:0.95rem;color:var(--white);}
+.winner-pts{font-size:1.1rem;font-weight:800;color:var(--gold);margin:4px 0;}
+.winner-stats{font-size:0.72rem;color:#8a9bb0;line-height:1.6;}
+.winner-prize{display:inline-block;margin-top:8px;padding:4px 12px;border-radius:20px;font-size:0.78rem;font-weight:700;}
+.gold-w .winner-prize{background:var(--gold);color:#000;}
+.silver-w .winner-prize{background:#94a3b8;color:#000;}
+.bronze-w .winner-prize{background:#cd7f32;color:#fff;}
 
-/* LEADERBOARD */
-.lb-box{background:var(--card);border:1px solid var(--navy3);border-radius:12px;padding:20px;margin-bottom:24px;}
-.lb-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--navy3);}
-.lb-row:last-child{border-bottom:none;}
-.lb-rank{width:28px;font-weight:700;color:var(--gold);text-align:center;}
-.lb-avatar{width:36px;height:36px;border-radius:50%;border:2px solid var(--navy3);object-fit:cover;background:var(--navy2);}
-.lb-name{flex:1;font-size:0.9rem;}
-.lb-pts{font-weight:600;color:var(--gold);font-size:0.9rem;}
-.lb-prize{font-size:0.78rem;color:var(--sub);margin-left:8px;}
+/* ── LEADERBOARD TABLE ──────────────────────────── */
+.lb-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+.lb-search input{padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;width:220px;outline:none;}
+.lb-search input:focus{border-color:var(--purple);}
+.table-wrap{background:var(--white);border-radius:12px;border:1px solid var(--border);overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04);}
+.lb-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+.lb-table th{background:var(--bg2);padding:10px 14px;text-align:left;color:var(--sub);font-weight:600;font-size:0.78rem;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);}
+.lb-table td{padding:11px 14px;border-bottom:1px solid var(--bg2);vertical-align:middle;}
+.lb-table tr:last-child td{border-bottom:none;}
+.lb-table tr:hover td{background:var(--bg);}
+.lb-table tr.me td{background:#f0edff;}
+.lb-table tr.rank-1 td{background:#fffbeb;}
+.lb-table tr.rank-2 td{background:#f8fafc;}
+.lb-table tr.rank-3 td{background:#fff7ed;}
+.rank-badge{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;font-weight:700;font-size:0.8rem;}
+.rank-badge.r1{background:var(--gold);color:#000;}
+.rank-badge.r2{background:#94a3b8;color:#000;}
+.rank-badge.r3{background:#cd7f32;color:#fff;}
+.rank-badge.rn{background:var(--bg2);color:var(--sub);}
+.member-cell{display:flex;align-items:center;gap:10px;}
+.member-cell img{width:30px;height:30px;border-radius:50%;object-fit:cover;}
+.prize-chip{display:inline-block;padding:2px 10px;border-radius:12px;font-size:0.75rem;font-weight:600;background:var(--bg2);color:var(--sub);}
+.prize-chip.has-prize{background:#fef9c3;color:#854d0e;}
+.lb-pagination{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;}
+.pg-btn{padding:6px 14px;border:1px solid var(--border);border-radius:6px;background:var(--white);font-size:0.82rem;color:var(--text);}
+.pg-btn:hover{background:var(--bg);}
+.pg-btn.active{background:var(--purple);color:#fff;border-color:var(--purple);}
 
-/* POINTS HISTORY */
-.history-box{background:var(--card);border:1px solid var(--navy3);border-radius:12px;padding:20px;margin-bottom:24px;}
-.hist-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--navy3);font-size:0.85rem;}
-.hist-row:last-child{border-bottom:none;}
-.hist-pts{font-weight:700;color:var(--green);}
+/* ── SECTION CARD ───────────────────────────────── */
+.section-card{background:var(--white);border-radius:12px;border:1px solid var(--border);padding:20px;margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,.04);}
+.section-card h3{font-size:1rem;font-weight:700;color:var(--text);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--bg2);}
 
-/* LOADING / EMPTY */
-.loading{text-align:center;padding:40px;color:var(--sub);}
-.empty{text-align:center;padding:24px;color:var(--sub);font-size:0.9rem;}
+/* ── BADGES ─────────────────────────────────────── */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.73rem;font-weight:600;}
+.badge.approved{background:#dcfce7;color:#166534;}
+.badge.pending{background:#fef9c3;color:#854d0e;}
+.badge.rejected{background:#fee2e2;color:#991b1b;}
+.badge.verified{background:#dcfce7;color:#166534;}
+.badge.unverified{background:#fef9c3;color:#854d0e;}
 
-@media(max-width:600px){
-  .challenge-info{flex-direction:column;}
-  .stats-grid{grid-template-columns:repeat(2,1fr);}
-  .actions-grid{grid-template-columns:repeat(2,1fr);}
-  nav .profile-btn span{display:none;}
+/* ── IDEAS TABLE ────────────────────────────────── */
+.data-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+.data-table th{text-align:left;padding:8px 12px;color:var(--sub);font-size:0.78rem;font-weight:600;border-bottom:1px solid var(--bg2);}
+.data-table td{padding:10px 12px;border-bottom:1px solid var(--bg2);vertical-align:middle;}
+.data-table tr:last-child td{border-bottom:none;}
+
+/* ── POINTS HISTORY ─────────────────────────────── */
+.hist-item{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--bg2);}
+.hist-item:last-child{border-bottom:none;}
+.hist-act{font-weight:500;font-size:0.88rem;}
+.hist-meta{font-size:0.75rem;color:var(--sub);margin-top:2px;}
+.hist-pts{font-weight:700;color:var(--green);font-size:0.95rem;}
+
+/* ── PRIZE TABLE ────────────────────────────────── */
+.prize-table{width:100%;border-collapse:collapse;font-size:0.88rem;}
+.prize-table th{background:var(--navy);color:var(--white);padding:10px 14px;text-align:left;}
+.prize-table td{padding:10px 14px;border-bottom:1px solid var(--bg2);}
+.prize-table tr.gold-row td{background:#fffbeb;font-weight:700;}
+.prize-table tr.silver-row td{background:#f8fafc;font-weight:600;}
+.prize-table tr.bronze-row td{background:#fff7ed;font-weight:600;}
+.prize-amount{font-weight:700;color:var(--gold2);}
+
+/* ── RULES ──────────────────────────────────────── */
+.rule-card{background:var(--white);border-radius:12px;border:1px solid var(--border);padding:20px;margin-bottom:14px;}
+.rule-card h4{font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:8px;}
+.rule-card p,.rule-card li{font-size:0.88rem;color:var(--sub);line-height:1.7;}
+.rule-card ul{padding-left:18px;}
+.pts-formula{background:var(--navy);color:var(--white);border-radius:10px;padding:16px 20px;font-family:monospace;font-size:0.9rem;line-height:1.8;margin:12px 0;}
+.pts-formula span{color:var(--gold);}
+
+/* ── REFERRAL ───────────────────────────────────── */
+.ref-link-box{display:flex;gap:8px;margin:12px 0;}
+.ref-link-box input{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;background:var(--bg);outline:none;color:var(--text);}
+.btn-primary{background:var(--purple);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-weight:600;font-size:0.85rem;transition:opacity .2s;}
+.btn-primary:hover{opacity:.85;}
+.btn-secondary{background:none;border:1px solid var(--purple);color:var(--purple);border-radius:8px;padding:10px 18px;font-weight:600;font-size:0.85rem;}
+
+/* ── LOADING / EMPTY / ERROR ────────────────────── */
+.state-box{text-align:center;padding:40px 20px;color:var(--sub);}
+.state-box .state-icon{font-size:2.5rem;margin-bottom:10px;}
+.state-box p{font-size:0.9rem;}
+.spinner{display:inline-block;width:28px;height:28px;border:3px solid var(--bg2);border-top-color:var(--purple);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── MOBILE OVERLAY ─────────────────────────────── */
+#overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:190;}
+
+/* ── RESPONSIVE ─────────────────────────────────── */
+@media(max-width:1100px){.stats-row{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:900px){
+  .top3-row{grid-template-columns:1fr;}
+  .stats-row{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:768px){
+  #sidebar{transform:translateX(-100%);}
+  #sidebar.open{transform:translateX(0);}
+  #main{margin-left:0;}
+  #menuToggle{display:block;}
+  #overlay.show{display:block;}
+  .search-wrap input{width:160px;}
+  .lb-table th:nth-child(4),.lb-table td:nth-child(4),
+  .lb-table th:nth-child(5),.lb-table td:nth-child(5),
+  .lb-table th:nth-child(6),.lb-table td:nth-child(6){display:none;}
+}
+@media(max-width:480px){
+  .stats-row{grid-template-columns:repeat(2,1fr);}
+  .banner-meta{flex-direction:column;}
+  .search-wrap{display:none;}
+  #content{padding:16px;}
 }
 </style>
 </head>
 <body>
 
-<!-- NAV -->
-<nav>
-  <div class="nav-logo">💡 ManIdea</div>
-  <div class="nav-right">
-    <button class="notif-btn" title="Notifications">🔔<span class="notif-dot"></span></button>
-    <div class="profile-wrap">
-      <button class="profile-btn" id="profileBtn">
-        <img id="navAvatar" src="https://ui-avatars.com/api/?background=f5c518&color=000&name=U" alt="avatar"/>
-        <span id="navUsername">...</span> ▾
-      </button>
-      <div class="dropdown" id="dropdown">
-        <a href="#">👤 My Profile</a>
-        <a href="#">⚙️ Settings</a>
-        <button id="logoutBtn">🚪 Logout</button>
+<!-- MOBILE OVERLAY -->
+<div id="overlay"></div>
+
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-text">💡 ManIdea</div>
+    <div class="sb-logo-sub">45-Day Championship</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-item active" data-page="dashboard"><span class="sb-icon">🏠</span> Dashboard</div>
+    <div class="sb-item" data-page="my-ideas"><span class="sb-icon">💡</span> My Ideas</div>
+    <div class="sb-item" data-page="my-referrals"><span class="sb-icon">🔗</span> My Referrals</div>
+    <div class="sb-item" data-page="my-points"><span class="sb-icon">📈</span> My Points</div>
+    <div class="sb-item" data-page="prizes"><span class="sb-icon">🏆</span> Prizes</div>
+    <div class="sb-item" data-page="rules"><span class="sb-icon">📜</span> Points Rules</div>
+    <div class="sb-item" data-page="leaderboard"><span class="sb-icon">📊</span> Leaderboard</div>
+    <div class="sb-item logout-item" id="logoutBtn"><span class="sb-icon">🚪</span> Logout</div>
+  </nav>
+  <div class="sb-footer">ManIdea © 2025</div>
+</aside>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- TOPBAR -->
+  <header id="topbar">
+    <div class="topbar-left">
+      <button id="menuToggle">☰</button>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="globalSearch" placeholder="Search members or ideas…"/>
       </div>
     </div>
-  </div>
-</nav>
-
-<main>
-
-  <!-- WELCOME -->
-  <div class="welcome">
-    <h1 id="welcomeMsg">Welcome back!</h1>
-    <p>45-Day Ideas Championship</p>
-    <div class="challenge-info">
-      <div class="cinfo"><label>Start Date</label><span id="startDate">—</span></div>
-      <div class="cinfo"><label>End Date</label><span id="endDate">—</span></div>
-      <div class="cinfo"><label>Days Remaining</label><span id="countdown">—</span></div>
-      <div class="cinfo"><label>Your Rank</label><span id="welcomeRank">—</span></div>
+    <div class="topbar-right">
+      <button class="notif-btn" title="Notifications">🔔<span class="notif-dot"></span></button>
+      <div class="user-chip" id="userChip">
+        <img id="topAvatar" src="https://ui-avatars.com/api/?background=6c63ff&color=fff&name=U" alt="avatar"/>
+        <span id="topUsername">Loading…</span>
+        <div class="user-dropdown" id="userDropdown">
+          <a href="#" data-page="dashboard">👤 My Profile</a>
+          <button id="logoutBtn2">🚪 Logout</button>
+        </div>
+      </div>
     </div>
-  </div>
+  </header>
 
-  <!-- STATS -->
-  <div class="section-title">📊 Your Statistics</div>
-  <div class="stats-grid">
-    <div class="stat-card"><div class="val" id="statPoints">—</div><div class="lbl">Total Points</div></div>
-    <div class="stat-card"><div class="val" id="statIdeas">—</div><div class="lbl">Approved Ideas</div></div>
-    <div class="stat-card"><div class="val" id="statReferrals">—</div><div class="lbl">Verified Referrals</div></div>
-    <div class="stat-card"><div class="val" id="statWatched">—</div><div class="lbl">Ideas Watched</div></div>
-    <div class="stat-card"><div class="val" id="statRank">—</div><div class="lbl">Current Rank</div></div>
-    <div class="stat-card"><div class="val" id="statPrize">—</div><div class="lbl">Potential Prize</div></div>
-  </div>
+  <!-- CONTENT -->
+  <div id="content">
 
-  <!-- QUICK ACTIONS -->
-  <div class="section-title">⚡ Quick Actions</div>
-  <div class="actions-grid">
-    <div class="action-card"><div class="icon">💡</div><div class="name">Post a New Idea</div></div>
-    <div class="action-card"><div class="icon">🔍</div><div class="name">Explore Ideas</div></div>
-    <div class="action-card"><div class="icon">👥</div><div class="name">Invite Friends</div></div>
-    <div class="action-card"><div class="icon">🏆</div><div class="name">View Leaderboard</div></div>
-    <div class="action-card"><div class="icon">📋</div><div class="name">My Posted Ideas</div></div>
-    <div class="action-card"><div class="icon">🔗</div><div class="name">Referral History</div></div>
-    <div class="action-card"><div class="icon">📈</div><div class="name">Points History</div></div>
-    <div class="action-card"><div class="icon">📜</div><div class="name">Challenge Rules</div></div>
-  </div>
+    <!-- ── PAGE: DASHBOARD ── -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-title" id="welcomeTitle">Welcome back!</div>
 
-  <!-- REFERRAL -->
-  <div class="section-title">🔗 Your Referral Link</div>
-  <div class="referral-box">
-    <p style="color:var(--sub);font-size:0.85rem;margin-bottom:8px;">Share your unique link. Earn 300 points per verified referral.</p>
-    <div class="ref-link-row">
-      <input type="text" id="refLink" readonly placeholder="Generating your link..."/>
-      <button class="btn-gold" id="copyRefBtn">Copy</button>
-      <button class="btn-outline" id="shareRefBtn">Share</button>
+      <!-- Banner -->
+      <div class="banner">
+        <div class="banner-title">MANIDEA</div>
+        <div style="font-size:1rem;font-weight:600;color:#a0b4cc;margin-top:2px;">45-DAY IDEAS CHAMPIONSHIP</div>
+        <div class="banner-sub">Post Ideas • Refer Friends • Watch Ideas • Win Rewards!</div>
+        <div class="banner-meta">
+          <div class="bm-item"><label>Start Date</label><span id="bannerStart">—</span></div>
+          <div class="bm-item"><label>End Date</label><span id="bannerEnd">—</span></div>
+          <div class="bm-item"><label>Time Remaining</label><span id="bannerCountdown" class="gold">—</span></div>
+          <div class="bm-item"><label>Prize Pool</label><span class="gold">₹24,050</span></div>
+          <div class="bm-item"><label>Total Winners</label><span>30 Members</span></div>
+        </div>
+        <button class="btn-view-prizes" id="viewPrizesBtn">🏆 View Prizes</button>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card highlight"><div class="s-val" id="sPoints">—</div><div class="s-lbl">Total Points</div></div>
+        <div class="stat-card"><div class="s-val" id="sIdeas">—</div><div class="s-lbl">Approved Ideas</div></div>
+        <div class="stat-card"><div class="s-val" id="sReferrals">—</div><div class="s-lbl">Verified Referrals</div></div>
+        <div class="stat-card"><div class="s-val" id="sWatched">—</div><div class="s-lbl">Ideas Watched</div></div>
+        <div class="stat-card highlight"><div class="s-val" id="sRank">—</div><div class="s-lbl">Current Rank</div></div>
+        <div class="stat-card gold-card"><div class="s-val" id="sPrize">—</div><div class="s-lbl">Potential Prize</div></div>
+      </div>
+
+      <!-- Top 3 -->
+      <div class="page-title" style="font-size:1rem;">🥇 Top 3 Members</div>
+      <div class="top3-row" id="top3Row">
+        <div class="state-box"><div class="spinner"></div></div>
+      </div>
+
+      <!-- Top 150 preview -->
+      <div class="lb-header">
+        <div class="page-title" style="font-size:1rem;margin-bottom:0;">📊 TOP 150 MEMBERS LEADERBOARD</div>
+        <div class="lb-search"><input type="text" id="dashLbSearch" placeholder="Search member…"/></div>
+      </div>
+      <div class="table-wrap">
+        <table class="lb-table">
+          <thead><tr>
+            <th>Rank</th><th>Member</th><th>Total Points</th>
+            <th>Ideas</th><th>Referrals</th><th>Watched</th><th>Prize</th>
+          </tr></thead>
+          <tbody id="dashLbBody"><tr><td colspan="7" class="state-box"><div class="spinner"></div></td></tr></tbody>
+        </table>
+        <div class="lb-pagination" id="dashPagination"></div>
+      </div>
     </div>
-    <p style="font-size:0.82rem;color:var(--sub);">Verified Referrals: <strong id="refCount" style="color:var(--gold)">—</strong></p>
-  </div>
 
-  <!-- MY IDEAS -->
-  <div class="section-title">💡 My Ideas</div>
-  <div class="ideas-box">
-    <table>
-      <thead><tr><th>Title</th><th>Submitted</th><th>Status</th><th>Points</th></tr></thead>
-      <tbody id="ideasBody"><tr><td colspan="4" class="loading">Loading ideas...</td></tr></tbody>
-    </table>
-  </div>
-
-  <!-- LEADERBOARD -->
-  <div class="section-title">🏆 Top 10 Leaderboard</div>
-  <div class="lb-box" id="lbBox"><div class="loading">Loading leaderboard...</div></div>
-  <div style="text-align:center;margin-bottom:24px;">
-    <button class="btn-outline" id="viewTop30Btn">View Top 30</button>
-  </div>
-
-  <!-- POINTS HISTORY -->
-  <div class="section-title">📈 Points History</div>
-  <div class="history-box" id="historyBox"><div class="loading">Loading history...</div></div>
-
-</main>
-
-<!-- TOP 30 MODAL -->
-<div id="top30Modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;overflow-y:auto;padding:24px;">
-  <div style="background:var(--navy2);border:1px solid var(--gold);border-radius:12px;max-width:600px;margin:0 auto;padding:24px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <span style="font-size:1.1rem;font-weight:600;color:var(--gold);">🏆 Full Championship Leaderboard</span>
-      <button id="closeModal" style="background:none;border:none;color:var(--text);font-size:1.4rem;cursor:pointer;">✕</button>
+    <!-- ── PAGE: MY IDEAS ── -->
+    <div class="page" id="page-my-ideas">
+      <div class="page-title">💡 My Ideas</div>
+      <div class="section-card">
+        <h3>Your Submitted Ideas</h3>
+        <div class="table-wrap" style="border:none;box-shadow:none;">
+          <table class="data-table">
+            <thead><tr><th>Title</th><th>Submitted</th><th>Status</th><th>Points</th></tr></thead>
+            <tbody id="myIdeasBody"><tr><td colspan="4" class="state-box"><div class="spinner"></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
     </div>
-    <div id="top30Box"><div class="loading">Loading...</div></div>
-  </div>
-</div>
 
+    <!-- ── PAGE: MY REFERRALS ── -->
+    <div class="page" id="page-my-referrals">
+      <div class="page-title">🔗 My Referrals</div>
+      <div class="section-card">
+        <h3>Your Referral Link</h3>
+        <p style="font-size:0.85rem;color:var(--sub);margin-bottom:10px;">Share this link. Earn <strong>300 points</strong> per verified referral.</p>
+        <div class="ref-link-box">
+          <input type="text" id="refLinkInput" readonly placeholder="Generating…"/>
+          <button class="btn-primary" id="copyRefBtn">Copy</button>
+          <button class="btn-secondary" id="shareRefBtn">Share</button>
+        </div>
+        <p style="font-size:0.82rem;color:var(--sub);">Verified Referrals: <strong id="refCountDisplay" style="color:var(--green)">—</strong></p>
+      </div>
+      <div class="section-card">
+        <h3>Referred Members</h3>
+        <div class="table-wrap" style="border:none;box-shadow:none;">
+          <table class="data-table">
+            <thead><tr><th>Name</th><th>Joined</th><th>Status</th></tr></thead>
+            <tbody id="refBody"><tr><td colspan="3" class="state-box"><div class="spinner"></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PAGE: MY POINTS ── -->
+    <div class="page" id="page-my-points">
+      <div class="page-title">📈 My Points</div>
+      <div class="stats-row" style="grid-template-columns:repeat(4,1fr);">
+        <div class="stat-card highlight"><div class="s-val" id="ptTotal">—</div><div class="s-lbl">Total Points</div></div>
+        <div class="stat-card"><div class="s-val" id="ptIdeas">—</div><div class="s-lbl">From Ideas</div></div>
+        <div class="stat-card"><div class="s-val" id="ptRefs">—</div><div class="s-lbl">From Referrals</div></div>
+        <div class="stat-card"><div class="s-val" id="ptWatch">—</div><div class="s-lbl">From Watching</div></div>
+      </div>
+      <div class="section-card">
+        <h3>Points History</h3>
+        <div id="historyList"><div class="state-box"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+    <!-- ── PAGE: PRIZES ── -->
+    <div class="page" id="page-prizes">
+      <div class="page-title">🏆 Prize Distribution</div>
+      <div class="section-card">
+        <h3>Championship Prize Table <span style="font-size:0.75rem;color:var(--sub);font-weight:400;">(Provisional until results verified)</span></h3>
+        <div class="table-wrap" style="border:none;box-shadow:none;">
+          <table class="prize-table">
+            <thead><tr><th>Rank</th><th>Prize</th><th>Winners</th><th>Your Status</th></tr></thead>
+            <tbody id="prizeTableBody"></tbody>
+          </table>
+        </div>
+        <p style="font-size:0.8rem;color:var(--sub);margin-top:12px;">Total Prize Pool: <strong style="color:var(--gold2)">₹24,050</strong> · Total Winners: <strong>30</strong></p>
+      </div>
+      <div class="section-card">
+        <h3>Eligibility Requirements</h3>
+        <ul style="font-size:0.88rem;color:var(--sub);padding-left:18px;line-height:2;">
+          <li>Must be a registered ManIdea member during the challenge period.</li>
+          <li>Points must be earned through verified, eligible activities only.</li>
+          <li>No fake accounts, duplicate ideas, or self-referrals.</li>
+          <li>Final results verified by ManIdea admin before prize distribution.</li>
+          <li>Tie-breaking: earlier registration date wins in case of equal points.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ── PAGE: RULES ── -->
+    <div class="page" id="page-rules">
+      <div class="page-title">📜 Points Rules</div>
+      <div class="rule-card">
+        <h4>How Points Are Calculated</h4>
+        <div class="pts-formula">
+          Total Points =<br>
+          &nbsp;&nbsp;(<span>Eligible Ideas Watched</span> × 10)<br>
+          + (<span>Verified Referrals</span> × 300)<br>
+          + (<span>Approved Original Ideas</span> × 100)
+        </div>
+      </div>
+      <div class="rule-card">
+        <h4>📺 Watching Ideas — 10 Points Each</h4>
+        <ul>
+          <li>Watch any eligible idea posted during the challenge period.</li>
+          <li>Each unique idea counts once per user — repeated views earn no extra points.</li>
+          <li>Only ideas approved by ManIdea admin are eligible.</li>
+        </ul>
+      </div>
+      <div class="rule-card">
+        <h4>👥 Referring Friends — 300 Points Each</h4>
+        <ul>
+          <li>Share your unique referral link with friends.</li>
+          <li>Points awarded only after the referred user is verified by admin.</li>
+          <li>Self-referrals are not allowed and will be disqualified.</li>
+          <li>Duplicate referral rewards are prevented automatically.</li>
+        </ul>
+      </div>
+      <div class="rule-card">
+        <h4>💡 Posting Ideas — 100 Points Each</h4>
+        <ul>
+          <li>Post original, creative ideas during the challenge period.</li>
+          <li>Points awarded only after admin approves the idea.</li>
+          <li>Duplicate, plagiarised, or rejected ideas earn no points.</li>
+        </ul>
+      </div>
+      <div class="rule-card">
+        <h4>🚫 Disqualification Rules</h4>
+        <ul>
+          <li>Fake accounts or bot activity → permanent disqualification.</li>
+          <li>Buying or selling referrals → disqualification.</li>
+          <li>Manipulating view counts → disqualification.</li>
+          <li>Any form of cheating → removal from leaderboard.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ── PAGE: LEADERBOARD ── -->
+    <div class="page" id="page-leaderboard">
+      <div class="page-title">📊 Top 150 Members Leaderboard</div>
+      <div class="lb-header">
+        <p style="font-size:0.85rem;color:var(--sub);">Sorted by verified challenge points. Updated live.</p>
+        <div class="lb-search"><input type="text" id="fullLbSearch" placeholder="Search member…"/></div>
+      </div>
+      <div class="table-wrap">
+        <table class="lb-table">
+          <thead><tr>
+            <th>Rank</th><th>Member</th><th>Total Points</th>
+            <th>Ideas</th><th>Referrals</th><th>Watched</th><th>Prize</th>
+          </tr></thead>
+          <tbody id="fullLbBody"><tr><td colspan="7" class="state-box"><div class="spinner"></div></td></tr></tbody>
+        </table>
+        <div class="lb-pagination" id="fullPagination"></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
+import { initializeApp }       from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, collection, query, where, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
 
+/* ── CONFIG ── */
 const firebaseConfig = {
-  apiKey: "AIzaSyClnTEDA7hCNJPAN8RXl8MB3WBReBxYKRE",
-  authDomain: "manidea-b87c3.firebaseapp.com",
-  projectId: "manidea-b87c3",
-  storageBucket: "manidea-b87c3.firebasestorage.app",
-  messagingSenderId: "416933820616",
-  appId: "1:416933820616:web:c214c0b856f6a6adbecdfd",
-  measurementId: "G-HT5CZH2MDZ"
+  apiKey:"AIzaSyClnTEDA7hCNJPAN8RXl8MB3WBReBxYKRE",
+  authDomain:"manidea-b87c3.firebaseapp.com",
+  projectId:"manidea-b87c3",
+  storageBucket:"manidea-b87c3.firebasestorage.app",
+  messagingSenderId:"416933820616",
+  appId:"1:416933820616:web:c214c0b856f6a6adbecdfd",
+  measurementId:"G-HT5CZH2MDZ"
 };
+const CHALLENGE_START = new Date("2025-06-01T00:00:00");
+const CHALLENGE_END   = new Date("2025-07-15T23:59:59");
 
-const app = initializeApp(firebaseConfig);
+const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
+const db   = getFirestore(app);
 
-// Prize structure
-function getPrize(rank) {
-  if (rank === 1) return "₹9,000";
-  if (rank === 2) return "₹7,000";
-  if (rank === 3) return "₹5,000";
-  if (rank >= 4 && rank <= 20) return "₹150";
-  if (rank >= 21 && rank <= 30) return "₹50";
-  return "—";
+/* ── HELPERS ── */
+const getPrize = r => r===1?"₹9,000":r===2?"₹7,000":r===3?"₹5,000":r>=4&&r<=20?"₹150":r>=21&&r<=30?"₹50":"No Prize";
+const calcPts  = (w=0,r=0,a=0) => (w*10)+(r*300)+(a*100);
+const fmtDate  = ts => { if(!ts)return"—"; const d=ts.toDate?ts.toDate():new Date(ts); return d.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}); };
+const fmtDT    = ts => { if(!ts)return"—"; const d=ts.toDate?ts.toDate():new Date(ts); return d.toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}); };
+const avatar   = (n,bg="6c63ff",c="fff") => `https://ui-avatars.com/api/?background=${bg}&color=${c}&name=${encodeURIComponent(n||"U")}&size=64`;
+const empty    = (msg,cols=7) => `<tr><td colspan="${cols}"><div class="state-box"><div class="state-icon">📭</div><p>${msg}</p></div></td></tr>`;
+const errRow   = (msg,cols=7) => `<tr><td colspan="${cols}"><div class="state-box"><div class="state-icon">⚠️</div><p>${msg}</p></div></td></tr>`;
+
+/* ── COUNTDOWN ── */
+function updateCountdown(){
+  const diff = CHALLENGE_END - new Date();
+  const el = document.getElementById("bannerCountdown");
+  if(!el) return;
+  if(diff<=0){ el.textContent="Challenge Ended"; return; }
+  const d=Math.floor(diff/86400000), h=Math.floor((diff%86400000)/3600000), m=Math.floor((diff%3600000)/60000);
+  el.textContent=`${d}d ${h}h ${m}m`;
 }
+document.getElementById("bannerStart").textContent = CHALLENGE_START.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
+document.getElementById("bannerEnd").textContent   = CHALLENGE_END.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
+updateCountdown();
+setInterval(updateCountdown, 60000);
 
-function calcPoints(watched, referrals, ideas) {
-  return (watched * 10) + (referrals * 300) + (ideas * 100);
+/* ── NAVIGATION ── */
+const pages = document.querySelectorAll(".page");
+const sbItems = document.querySelectorAll(".sb-item[data-page]");
+function showPage(id){
+  pages.forEach(p=>p.classList.remove("active"));
+  sbItems.forEach(i=>i.classList.remove("active"));
+  const pg = document.getElementById("page-"+id);
+  if(pg) pg.classList.add("active");
+  const si = document.querySelector(`.sb-item[data-page="${id}"]`);
+  if(si) si.classList.add("active");
+  closeSidebar();
 }
+sbItems.forEach(i=>i.addEventListener("click",()=>showPage(i.dataset.page)));
+document.getElementById("viewPrizesBtn").addEventListener("click",()=>showPage("prizes"));
+document.querySelectorAll("[data-page]").forEach(el=>{
+  if(el.tagName==="A") el.addEventListener("click",e=>{e.preventDefault();showPage(el.dataset.page);});
+});
 
-function formatDate(ts) {
-  if (!ts) return "—";
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-}
+/* ── MOBILE SIDEBAR ── */
+const sidebar=document.getElementById("sidebar"), overlay=document.getElementById("overlay");
+function closeSidebar(){ sidebar.classList.remove("open"); overlay.classList.remove("show"); }
+document.getElementById("menuToggle").addEventListener("click",()=>{ sidebar.classList.toggle("open"); overlay.classList.toggle("show"); });
+overlay.addEventListener("click",closeSidebar);
 
-// Challenge dates — update these to match your actual challenge
-const CHALLENGE_START = new Date("2025-06-01");
-const CHALLENGE_END = new Date("2025-07-15");
+/* ── USER DROPDOWN ── */
+const chip=document.getElementById("userChip"), drop=document.getElementById("userDropdown");
+chip.addEventListener("click",e=>{ e.stopPropagation(); drop.classList.toggle("open"); });
+document.addEventListener("click",()=>drop.classList.remove("open"));
 
-function setChallengeDates() {
-  document.getElementById("startDate").textContent = CHALLENGE_START.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-  document.getElementById("endDate").textContent = CHALLENGE_END.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-  const now = new Date();
-  const diff = Math.ceil((CHALLENGE_END - now) / (1000 * 60 * 60 * 24));
-  document.getElementById("countdown").textContent = diff > 0 ? diff + " days" : "Ended";
-}
+/* ── LOGOUT ── */
+async function doLogout(){ await signOut(auth); window.location.href="index.html"; }
+document.getElementById("logoutBtn").addEventListener("click",doLogout);
+document.getElementById("logoutBtn2").addEventListener("click",doLogout);
 
-// Auth guard
-onAuthStateChanged(auth, async (user) => {
-  if (!user) { window.location.href = "index.html"; return; }
-  setChallengeDates();
+/* ── AUTH GUARD ── */
+let currentUser=null, allMembers=[];
+onAuthStateChanged(auth, async user=>{
+  if(!user){ window.location.href="index.html"; return; }
+  currentUser=user;
+  await loadAllMembers();
   await loadUserData(user);
-  await loadLeaderboard(30);
+  renderDashboardLb();
+  renderFullLb();
+  renderPrizeTable();
+  await loadMyIdeas(user.uid);
+  await loadReferrals(user.uid);
   await loadPointsHistory(user.uid);
 });
 
-async function loadUserData(user) {
-  const uid = user.uid;
+/* ── LOAD ALL MEMBERS (for leaderboard + rank) ── */
+async function loadAllMembers(){
+  try{
+    const snap = await getDocs(collection(db,"users"));
+    allMembers = snap.docs.map(d=>{
+      const u=d.data();
+      const w=u.ideasWatched||u.watched||0;
+      const r=u.verifiedReferrals||u.referrals||0;
+      const a=u.approvedIdeas||u.ideas||0;
+      return { uid:d.id, name:u.username||u.name||"Member", photo:u.photoURL||"", w, r, a, pts:calcPts(w,r,a), createdAt:u.createdAt };
+    }).sort((a,b)=>b.pts-a.pts || (a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));
+  }catch(e){ console.error("loadAllMembers",e); }
+}
 
-  // Load user doc
-  const userSnap = await getDoc(doc(db, "users", uid));
-  const userData = userSnap.exists() ? userSnap.data() : {};
+/* ── USER DATA + STATS ── */
+async function loadUserData(user){
+  const snap = await getDoc(doc(db,"users",user.uid));
+  const u = snap.exists()?snap.data():{};
+  const name    = u.username||u.name||user.email.split("@")[0];
+  const photo   = u.photoURL||user.photoURL||avatar(name);
+  const watched = u.ideasWatched||u.watched||0;
+  const refs    = u.verifiedReferrals||u.referrals||0;
+  const ideas   = u.approvedIdeas||u.ideas||0;
+  const pts     = calcPts(watched,refs,ideas);
+  const rank    = allMembers.findIndex(m=>m.uid===user.uid)+1 || null;
 
-  const username = userData.username || userData.name || user.email.split("@")[0];
-  const photoURL = userData.photoURL || user.photoURL || `https://ui-avatars.com/api/?background=f5c518&color=000&name=${encodeURIComponent(username)}`;
+  // Header
+  document.getElementById("topAvatar").src   = photo;
+  document.getElementById("topUsername").textContent = name;
+  document.getElementById("welcomeTitle").textContent = `Welcome back, ${name}!`;
 
-  document.getElementById("welcomeMsg").textContent = `Welcome back, ${username}!`;
-  document.getElementById("navUsername").textContent = username;
-  document.getElementById("navAvatar").src = photoURL;
+  // Stats
+  document.getElementById("sPoints").textContent    = pts;
+  document.getElementById("sIdeas").textContent     = ideas;
+  document.getElementById("sReferrals").textContent = refs;
+  document.getElementById("sWatched").textContent   = watched;
+  document.getElementById("sRank").textContent      = rank ? "#"+rank : "Unranked";
+  document.getElementById("sPrize").textContent     = rank ? getPrize(rank) : "—";
 
-  // Stats — always calculate live from raw counts, never trust stored totalPoints
-  const watched = userData.ideasWatched || userData.watched || 0;
-  const referrals = userData.verifiedReferrals || userData.referrals || 0;
-  const approvedIdeas = userData.approvedIdeas || userData.ideas || 0;
-  const totalPoints = calcPoints(watched, referrals, approvedIdeas);
-
-  // Compute rank live from all users
-  const allSnap = await getDocs(collection(db, "users"));
-  const allPoints = allSnap.docs
-    .map(d => {
-      const u = d.data();
-      const w = u.ideasWatched || u.watched || 0;
-      const r = u.verifiedReferrals || u.referrals || 0;
-      const a = u.approvedIdeas || u.ideas || 0;
-      return calcPoints(w, r, a);
-    })
-    .sort((a, b) => b - a);
-  const rank = allPoints.findIndex(p => p <= totalPoints) + 1 || allPoints.length;
-
-  document.getElementById("statPoints").textContent = totalPoints;
-  document.getElementById("statIdeas").textContent = approvedIdeas;
-  document.getElementById("statReferrals").textContent = referrals;
-  document.getElementById("statWatched").textContent = watched;
-  document.getElementById("statRank").textContent = "#" + rank;
-  document.getElementById("statPrize").textContent = getPrize(rank);
-  document.getElementById("welcomeRank").textContent = "#" + rank;
+  // My Points page
+  document.getElementById("ptTotal").textContent = pts;
+  document.getElementById("ptIdeas").textContent = ideas*100;
+  document.getElementById("ptRefs").textContent  = refs*300;
+  document.getElementById("ptWatch").textContent = watched*10;
 
   // Referral link
-  const refCode = userData.referralCode || uid.slice(0, 8);
-  const refLink = `${window.location.origin}/index.html?ref=${refCode}`;
-  document.getElementById("refLink").value = refLink;
-  document.getElementById("refCount").textContent = referrals;
+  const code = u.referralCode||user.uid.slice(0,8);
+  document.getElementById("refLinkInput").value = `${location.origin}/index.html?ref=${code}`;
+  document.getElementById("refCountDisplay").textContent = refs;
 
-  // Load user's ideas
-  await loadMyIdeas(uid);
+  // Top 3
+  renderTop3();
 }
 
-async function loadMyIdeas(uid) {
-  const tbody = document.getElementById("ideasBody");
-  try {
-    const q = query(collection(db, "ideas"), where("userId", "==", uid), orderBy("createdAt", "desc"));
-    const snap = await getDocs(q);
-    if (snap.empty) {
-      tbody.innerHTML = `<tr><td colspan="4" class="empty">No ideas posted yet.</td></tr>`;
-      return;
-    }
-    tbody.innerHTML = snap.docs.map(d => {
-      const idea = d.data();
-      const status = (idea.status || "pending").toLowerCase();
-      const pts = status === "approved" ? 100 : 0;
+/* ── TOP 3 ── */
+function renderTop3(){
+  const top3 = allMembers.slice(0,3);
+  const styles = ["gold-w","silver-w","bronze-w"];
+  const medals = ["🥇","🥈","🥉"];
+  if(!top3.length){ document.getElementById("top3Row").innerHTML=`<div class="state-box"><p>No members yet.</p></div>`; return; }
+  document.getElementById("top3Row").innerHTML = top3.map((m,i)=>`
+    <div class="winner-card ${styles[i]}">
+      <div class="winner-medal">${medals[i]}</div>
+      <img class="winner-avatar" src="${m.photo||avatar(m.name)}" alt="${m.name}"/>
+      <div class="winner-name">${m.name}</div>
+      <div class="winner-pts">${m.pts} pts</div>
+      <div class="winner-stats">
+        💡 ${m.a} ideas &nbsp;·&nbsp; 👥 ${m.r} referrals &nbsp;·&nbsp; 📺 ${m.w} watched
+      </div>
+      <span class="winner-prize">${getPrize(i+1)} (provisional)</span>
+    </div>`).join("");
+}
+
+/* ── LEADERBOARD RENDER ── */
+let dashPage=1, fullPage=1;
+const PER_PAGE=25;
+
+function lbRow(m, rank, myUid){
+  const isMe = m.uid===myUid;
+  const rc = rank===1?"r1":rank===2?"r2":rank===3?"r3":"rn";
+  const tr = rank===1?"rank-1":rank===2?"rank-2":rank===3?"rank-3":"";
+  const prize = getPrize(rank);
+  const hasP  = prize!=="No Prize";
+  return `<tr class="${tr}${isMe?" me":""}">
+    <td><span class="rank-badge ${rc}">${rank<=3?["🥇","🥈","🥉"][rank-1]:rank}</span></td>
+    <td><div class="member-cell"><img src="${m.photo||avatar(m.name)}" alt="${m.name}"/>${m.name}${isMe?' <span style="font-size:0.7rem;color:var(--purple);font-weight:700;">(You)</span>':""}</div></td>
+    <td><strong>${m.pts}</strong></td>
+    <td>${m.a}</td><td>${m.r}</td><td>${m.w}</td>
+    <td><span class="prize-chip ${hasP?"has-prize":""}">${prize}</span></td>
+  </tr>`;
+}
+
+function renderLbTable(bodyId, paginId, members, page, searchVal, myUid){
+  const filtered = searchVal ? members.filter(m=>m.name.toLowerCase().includes(searchVal.toLowerCase())) : members;
+  const total = Math.min(filtered.length,150);
+  const start = (page-1)*PER_PAGE, end = Math.min(start+PER_PAGE, total);
+  const slice = filtered.slice(start,end);
+  const tbody = document.getElementById(bodyId);
+  if(!slice.length){ tbody.innerHTML=empty("No members found.",7); }
+  else { tbody.innerHTML = slice.map((m,i)=>lbRow(m, filtered.indexOf(m)+1, myUid)).join(""); }
+  // Pagination
+  const pages = Math.ceil(total/PER_PAGE);
+  const pg = document.getElementById(paginId);
+  if(pages<=1){ pg.innerHTML=""; return; }
+  let html="";
+  for(let i=1;i<=pages;i++) html+=`<button class="pg-btn${i===page?" active":""}" data-p="${i}">${i}</button>`;
+  pg.innerHTML=html;
+  pg.querySelectorAll(".pg-btn").forEach(b=>b.addEventListener("click",()=>{
+    if(bodyId==="dashLbBody"){ dashPage=+b.dataset.p; renderDashboardLb(); }
+    else { fullPage=+b.dataset.p; renderFullLb(); }
+  }));
+}
+
+function renderDashboardLb(){
+  if(!currentUser) return;
+  renderLbTable("dashLbBody","dashPagination",allMembers,dashPage,document.getElementById("dashLbSearch").value,currentUser.uid);
+}
+function renderFullLb(){
+  if(!currentUser) return;
+  renderLbTable("fullLbBody","fullPagination",allMembers,fullPage,document.getElementById("fullLbSearch").value,currentUser.uid);
+}
+
+document.getElementById("dashLbSearch").addEventListener("input",()=>{ dashPage=1; renderDashboardLb(); });
+document.getElementById("fullLbSearch").addEventListener("input",()=>{ fullPage=1; renderFullLb(); });
+
+/* ── MY IDEAS ── */
+async function loadMyIdeas(uid){
+  const tbody=document.getElementById("myIdeasBody");
+  try{
+    const q=query(collection(db,"ideas"),where("userId","==",uid),orderBy("createdAt","desc"));
+    const snap=await getDocs(q);
+    if(snap.empty){ tbody.innerHTML=empty("No ideas posted yet.",4); return; }
+    tbody.innerHTML=snap.docs.map(d=>{
+      const idea=d.data();
+      const st=(idea.status||"pending").toLowerCase();
+      const pts=st==="approved"?"+100":"—";
       return `<tr>
-        <td>${idea.title || "Untitled"}</td>
-        <td>${formatDate(idea.createdAt)}</td>
-        <td><span class="badge ${status}">${status.charAt(0).toUpperCase()+status.slice(1)}</span></td>
-        <td>${status === "approved" ? "+"+pts : "—"}</td>
+        <td>${idea.title||"Untitled"}</td>
+        <td>${fmtDate(idea.createdAt)}</td>
+        <td><span class="badge ${st}">${st.charAt(0).toUpperCase()+st.slice(1)}</span></td>
+        <td style="color:var(--green);font-weight:600;">${pts}</td>
       </tr>`;
     }).join("");
-  } catch (e) {
-    tbody.innerHTML = `<tr><td colspan="4" class="empty">Could not load ideas. Check Firestore rules.</td></tr>`;
-    console.error(e);
-  }
+  }catch(e){ tbody.innerHTML=errRow("Could not load ideas. Check Firestore rules.",4); console.error(e); }
 }
 
-async function loadLeaderboard(count) {
-  const lbBox = document.getElementById("lbBox");
-  const top30Box = document.getElementById("top30Box");
-  try {
-    // Get today's start timestamp
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-
-    // Fetch all users (no server-side filter since we compute points live)
-    const snap = await getDocs(collection(db, "users"));
-    if (snap.empty) {
-      lbBox.innerHTML = `<div class="empty">No leaderboard data yet.</div>`;
-      return;
-    }
-
-    // Filter users who joined today or later, compute points live
-    const members = snap.docs
-      .map(d => { const u = d.data(); return { ...u, uid: d.id }; })
-      .filter(u => {
-        if (!u.createdAt) return false;
-        const joined = u.createdAt.toDate ? u.createdAt.toDate() : new Date(u.createdAt);
-        return joined >= todayStart;
-      })
-      .map(u => {
-        const watched   = u.ideasWatched       || u.watched    || 0;
-        const referrals = u.verifiedReferrals  || u.referrals  || 0;
-        const ideas     = u.approvedIdeas      || u.ideas      || 0;
-        const pts = calcPoints(watched, referrals, ideas);
-        return { ...u, computedPoints: pts };
-      })
-      .sort((a, b) => b.computedPoints - a.computedPoints)
-      .slice(0, count);
-
-    if (members.length === 0) {
-      lbBox.innerHTML = `<div class="empty">No new members today yet.</div>`;
-      top30Box.innerHTML = `<div class="empty">No new members today yet.</div>`;
-      return;
-    }
-
-    const rows = members.map((u, i) => {
-      const rank   = i + 1;
-      const name   = u.username || u.name || "Member";
-      const pts    = u.computedPoints;
-      const avatar = u.photoURL || `https://ui-avatars.com/api/?background=1e3048&color=f5c518&name=${encodeURIComponent(name)}`;
-      const medal  = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : rank;
-      return `<div class="lb-row">
-        <div class="lb-rank">${medal}</div>
-        <img class="lb-avatar" src="${avatar}" alt="${name}"/>
-        <div class="lb-name">${name}</div>
-        <div class="lb-pts">${pts} pts</div>
-        <div class="lb-prize">${getPrize(rank)} <span style="font-size:0.7rem;color:#666">(provisional)</span></div>
-      </div>`;
-    });
-    lbBox.innerHTML = rows.slice(0, 10).join("");
-    top30Box.innerHTML = rows.join("");
-  } catch (e) {
-    lbBox.innerHTML = `<div class="empty">Could not load leaderboard. Check Firestore rules.</div>`;
-    console.error(e);
-  }
+/* ── REFERRALS ── */
+async function loadReferrals(uid){
+  const tbody=document.getElementById("refBody");
+  try{
+    const q=query(collection(db,"referrals"),where("referrerId","==",uid),orderBy("createdAt","desc"));
+    const snap=await getDocs(q);
+    if(snap.empty){ tbody.innerHTML=empty("No referrals yet.",3); return; }
+    tbody.innerHTML=snap.docs.map(d=>{
+      const r=d.data();
+      const st=(r.status||"unverified").toLowerCase();
+      return `<tr>
+        <td>${r.referredName||r.referredEmail||"Member"}</td>
+        <td>${fmtDate(r.createdAt)}</td>
+        <td><span class="badge ${st}">${st.charAt(0).toUpperCase()+st.slice(1)}</span></td>
+      </tr>`;
+    }).join("");
+  }catch(e){ tbody.innerHTML=errRow("Could not load referrals. Check Firestore rules.",3); console.error(e); }
 }
 
-async function loadPointsHistory(uid) {
-  const box = document.getElementById("historyBox");
-  try {
-    const q = query(collection(db, "pointsHistory"), where("userId", "==", uid), orderBy("createdAt", "desc"), limit(20));
-    const snap = await getDocs(q);
-    if (snap.empty) {
-      box.innerHTML = `<div class="empty">No points history yet.</div>`;
-      return;
-    }
-    box.innerHTML = snap.docs.map(d => {
-      const h = d.data();
-      return `<div class="hist-row">
-        <div>
-          <div style="font-weight:500">${h.activity || h.type || "Activity"}</div>
-          <div style="font-size:0.75rem;color:var(--sub)">${formatDate(h.createdAt)} · ${h.status || "verified"}</div>
-        </div>
-        <div class="hist-pts">+${h.points || 0} pts</div>
+/* ── POINTS HISTORY ── */
+async function loadPointsHistory(uid){
+  const box=document.getElementById("historyList");
+  try{
+    const q=query(collection(db,"pointsHistory"),where("userId","==",uid),orderBy("createdAt","desc"),limit(50));
+    const snap=await getDocs(q);
+    if(snap.empty){ box.innerHTML=`<div class="state-box"><div class="state-icon">📭</div><p>No points history yet.</p></div>`; return; }
+    box.innerHTML=snap.docs.map(d=>{
+      const h=d.data();
+      return `<div class="hist-item">
+        <div><div class="hist-act">${h.activity||h.type||"Activity"}</div><div class="hist-meta">${fmtDT(h.createdAt)} · <span class="badge ${h.status||"verified"}">${h.status||"verified"}</span></div></div>
+        <div class="hist-pts">+${h.points||0} pts</div>
       </div>`;
     }).join("");
-  } catch (e) {
-    box.innerHTML = `<div class="empty">Could not load history. Check Firestore rules.</div>`;
-    console.error(e);
-  }
+  }catch(e){ box.innerHTML=`<div class="state-box"><div class="state-icon">⚠️</div><p>Could not load history.</p></div>`; console.error(e); }
 }
 
-// Profile dropdown
-document.getElementById("profileBtn").addEventListener("click", () => {
-  document.getElementById("dropdown").classList.toggle("open");
-});
-document.addEventListener("click", (e) => {
-  if (!document.getElementById("profileBtn").contains(e.target))
-    document.getElementById("dropdown").classList.remove("open");
-});
+/* ── PRIZE TABLE ── */
+function renderPrizeTable(){
+  const rows=[
+    {rank:"1st",prize:"₹9,000",winners:1,cls:"gold-row"},
+    {rank:"2nd",prize:"₹7,000",winners:1,cls:"silver-row"},
+    {rank:"3rd",prize:"₹5,000",winners:1,cls:"bronze-row"},
+    {rank:"4th–20th",prize:"₹150 each",winners:17,cls:""},
+    {rank:"21st–30th",prize:"₹50 each",winners:10,cls:""},
+    {rank:"31st–150th",prize:"No Prize",winners:120,cls:""},
+  ];
+  const myRank = currentUser ? allMembers.findIndex(m=>m.uid===currentUser.uid)+1 : null;
+  document.getElementById("prizeTableBody").innerHTML=rows.map(r=>`
+    <tr class="${r.cls}">
+      <td>${r.rank}</td>
+      <td class="prize-amount">${r.prize}</td>
+      <td>${r.winners}</td>
+      <td>${myRank&&getPrize(myRank)===r.prize.split(" ")[0]?'<span class="badge approved">Your current rank</span>':"—"}</td>
+    </tr>`).join("");
+}
 
-// Logout
-document.getElementById("logoutBtn").addEventListener("click", async () => {
-  await signOut(auth);
-  window.location.href = "index.html";
-});
-
-// Copy referral link
-document.getElementById("copyRefBtn").addEventListener("click", () => {
-  const val = document.getElementById("refLink").value;
-  navigator.clipboard.writeText(val).then(() => {
-    document.getElementById("copyRefBtn").textContent = "Copied!";
-    setTimeout(() => document.getElementById("copyRefBtn").textContent = "Copy", 2000);
+/* ── COPY / SHARE REFERRAL ── */
+document.getElementById("copyRefBtn").addEventListener("click",()=>{
+  const v=document.getElementById("refLinkInput").value;
+  navigator.clipboard.writeText(v).then(()=>{
+    const btn=document.getElementById("copyRefBtn");
+    btn.textContent="Copied!"; setTimeout(()=>btn.textContent="Copy",2000);
   });
 });
-
-// Share referral link
-document.getElementById("shareRefBtn").addEventListener("click", () => {
-  const val = document.getElementById("refLink").value;
-  if (navigator.share) {
-    navigator.share({ title: "Join ManIdea!", text: "Join the 45-Day Ideas Championship!", url: val });
-  } else {
-    navigator.clipboard.writeText(val);
-    alert("Link copied to clipboard!");
-  }
-});
-
-// Top 30 modal
-document.getElementById("viewTop30Btn").addEventListener("click", () => {
-  document.getElementById("top30Modal").style.display = "block";
-});
-document.getElementById("closeModal").addEventListener("click", () => {
-  document.getElementById("top30Modal").style.display = "none";
+document.getElementById("shareRefBtn").addEventListener("click",()=>{
+  const v=document.getElementById("refLinkInput").value;
+  if(navigator.share) navigator.share({title:"Join ManIdea!",text:"Join the 45-Day Ideas Championship!",url:v});
+  else { navigator.clipboard.writeText(v); alert("Link copied!"); }
 });
 </script>
 </body>
