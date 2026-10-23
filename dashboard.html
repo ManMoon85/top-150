@@ -493,6 +493,8 @@ const db   = getFirestore(app);
 /* ── HELPERS ── */
 const getPrize = r => r===1?"₹9,000":r===2?"₹7,000":r===3?"₹5,000":r>=4&&r<=20?"₹150":r>=21&&r<=30?"₹50":"No Prize";
 const calcPts  = (w=0,r=0,a=0) => (w*10)+(r*300)+(a*100);
+// Count ideas per creatorId from a bulk fetch
+let ideaCountMap = {}; // uid -> count
 const fmtDate  = ts => { if(!ts)return"—"; const d=ts.toDate?ts.toDate():new Date(ts); return d.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}); };
 const fmtDT    = ts => { if(!ts)return"—"; const d=ts.toDate?ts.toDate():new Date(ts); return d.toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}); };
 const avatar   = (n,bg="6c63ff",c="fff") => `https://ui-avatars.com/api/?background=${bg}&color=${c}&name=${encodeURIComponent(n||"U")}&size=64`;
@@ -565,22 +567,22 @@ onAuthStateChanged(auth, async user=>{
 /* ── LOAD ALL MEMBERS (for leaderboard + rank) ── */
 async function loadAllMembers(){
   try{
+    // Fetch all ideas once and build a count map by creatorId
+    const ideasSnap = await getDocs(collection(db,"ideas"));
+    ideaCountMap = {};
+    ideasSnap.docs.forEach(d=>{
+      const cid = d.data().creatorId;
+      if(cid) ideaCountMap[cid] = (ideaCountMap[cid]||0) + 1;
+    });
+
     const snap = await getDocs(collection(db,"users"));
     allMembers = snap.docs.map(d=>{
       const u = d.data();
-      // Match actual Android app field names from Firestore rules:
-      // referralCount, coins, approvedIdeas / ideasWatched
-      const w = Number(u.ideasWatched  ?? u.watched       ?? 0);
-      const r = Number(u.referralCount ?? u.verifiedReferrals ?? u.referrals ?? 0);
-      const a = Number(u.approvedIdeas ?? u.ideas         ?? 0);
+      const w = Number(u.ideasWatched  ?? u.watched    ?? 0);
+      const r = Number(u.referralCount ?? u.referrals  ?? 0);
+      const a = ideaCountMap[d.id] ?? Number(u.approvedIdeas ?? u.ideas ?? 0);
       const pts = calcPts(w, r, a);
-      return {
-        uid: d.id,
-        name: u.username||u.name||u.email||"Member",
-        photo: u.photoURL||"",
-        w, r, a, pts,
-        createdAt: u.createdAt
-      };
+      return { uid:d.id, name:u.username||u.name||u.email||"Member", photo:u.photoURL||"", w, r, a, pts, createdAt:u.createdAt };
     }).sort((a,b) => b.pts - a.pts || (a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));
   }catch(e){ console.error("loadAllMembers",e.code,e.message); }
 }
@@ -593,26 +595,16 @@ async function loadUserData(user){
   const name  = u.username||u.name||user.email.split("@")[0];
   const photo = u.photoURL||user.photoURL||avatar(name);
 
-  const watched = Number(u.ideasWatched ?? u.watched ?? 0);
-  const refs    = Number(u.referralCount ?? u.verifiedReferrals ?? u.referrals ?? 0);
+  const watched = Number(u.ideasWatched ?? u.watched   ?? 0);
+  const refs    = Number(u.referralCount ?? u.referrals ?? 0);
+  // Use ideaCountMap built during loadAllMembers (counts ALL posted ideas, no approval needed)
+  const ideas   = ideaCountMap[user.uid] ?? Number(u.approvedIdeas ?? u.ideas ?? 0);
+  const pts     = calcPts(watched, refs, ideas);
 
-  // Count approved ideas directly from ideas collection for accuracy
-  let ideas = Number(u.approvedIdeas ?? u.ideas ?? 0);
-  try{
-    const ideasSnap = await getDocs(query(collection(db,"ideas"), where("creatorId","==",user.uid)));
-    const approvedCount = ideasSnap.docs.filter(d=>{
-      const st = (d.data().status||d.data().approvalStatus||d.data().approvalstatus||"").toLowerCase();
-      return st==="approved";
-    }).length;
-    if(approvedCount > ideas) ideas = approvedCount;
-  }catch(_){}
-
-  const pts = calcPts(watched, refs, ideas);
-
-  // Update allMembers entry so rank/leaderboard reflects live count
+  // Sync allMembers so rank is accurate
   const mi = allMembers.findIndex(m => m.uid === user.uid);
-  if(mi >= 0){ allMembers[mi].a = ideas; allMembers[mi].w = watched; allMembers[mi].r = refs; allMembers[mi].pts = pts; }
-  allMembers.sort((a,b) => b.pts - a.pts || (a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));
+  if(mi >= 0){ allMembers[mi].a = ideas; allMembers[mi].w = watched; allMembers[mi].r = refs; allMembers[mi].pts = pts;
+    allMembers.sort((a,b) => b.pts - a.pts || (a.createdAt?.seconds||0)-(b.createdAt?.seconds||0)); }
 
   const rankIdx = allMembers.findIndex(m => m.uid === user.uid);
   const rank    = rankIdx >= 0 ? rankIdx + 1 : null;
@@ -720,13 +712,12 @@ async function loadMyIdeas(uid){
       .sort((a,b)=>(b.data().createdAt?.seconds||0)-(a.data().createdAt?.seconds||0))
       .map(d=>{
         const idea = d.data();
-        const st   = (idea.status||idea.approvalStatus||idea.approvalstatus||"pending").toLowerCase();
-        const pts  = st==="approved" ? "+100" : "—";
+        const st   = (idea.status||idea.approvalStatus||idea.approvalstatus||"posted").toLowerCase();
         return `<tr>
           <td>${idea.title||idea.ideaTitle||"Untitled"}</td>
           <td>${fmtDate(idea.createdAt||idea.submittedAt||idea.timestamp)}</td>
-          <td><span class="badge ${st}">${st.charAt(0).toUpperCase()+st.slice(1)}</span></td>
-          <td style="color:var(--green);font-weight:600">${pts}</td>
+          <td><span class="badge ${st==="approved"?"approved":st==="rejected"?"rejected":"pending"}">${st.charAt(0).toUpperCase()+st.slice(1)}</span></td>
+          <td style="color:var(--green);font-weight:600">+100</td>
         </tr>`;
       });
     tbody.innerHTML = rows.join("");
