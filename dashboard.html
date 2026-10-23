@@ -593,11 +593,26 @@ async function loadUserData(user){
   const name  = u.username||u.name||user.email.split("@")[0];
   const photo = u.photoURL||user.photoURL||avatar(name);
 
-  // Use actual Android app field names
-  const watched = Number(u.ideasWatched  ?? u.watched       ?? 0);
+  const watched = Number(u.ideasWatched ?? u.watched ?? 0);
   const refs    = Number(u.referralCount ?? u.verifiedReferrals ?? u.referrals ?? 0);
-  const ideas   = Number(u.approvedIdeas ?? u.ideas         ?? 0);
-  const pts     = calcPts(watched, refs, ideas);
+
+  // Count approved ideas directly from ideas collection for accuracy
+  let ideas = Number(u.approvedIdeas ?? u.ideas ?? 0);
+  try{
+    const ideasSnap = await getDocs(query(collection(db,"ideas"), where("creatorId","==",user.uid)));
+    const approvedCount = ideasSnap.docs.filter(d=>{
+      const st = (d.data().status||d.data().approvalStatus||d.data().approvalstatus||"").toLowerCase();
+      return st==="approved";
+    }).length;
+    if(approvedCount > ideas) ideas = approvedCount;
+  }catch(_){}
+
+  const pts = calcPts(watched, refs, ideas);
+
+  // Update allMembers entry so rank/leaderboard reflects live count
+  const mi = allMembers.findIndex(m => m.uid === user.uid);
+  if(mi >= 0){ allMembers[mi].a = ideas; allMembers[mi].w = watched; allMembers[mi].r = refs; allMembers[mi].pts = pts; }
+  allMembers.sort((a,b) => b.pts - a.pts || (a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));
 
   const rankIdx = allMembers.findIndex(m => m.uid === user.uid);
   const rank    = rankIdx >= 0 ? rankIdx + 1 : null;
@@ -705,7 +720,7 @@ async function loadMyIdeas(uid){
       .sort((a,b)=>(b.data().createdAt?.seconds||0)-(a.data().createdAt?.seconds||0))
       .map(d=>{
         const idea = d.data();
-        const st   = (idea.status||idea.approvalStatus||"pending").toLowerCase();
+        const st   = (idea.status||idea.approvalStatus||idea.approvalstatus||"pending").toLowerCase();
         const pts  = st==="approved" ? "+100" : "—";
         return `<tr>
           <td>${idea.title||idea.ideaTitle||"Untitled"}</td>
