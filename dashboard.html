@@ -483,8 +483,8 @@ const firebaseConfig = {
   appId:"1:416933820616:web:c214c0b856f6a6adbecdfd",
   measurementId:"G-HT5CZH2MDZ"
 };
-const CHALLENGE_START = new Date("2025-06-01T00:00:00");
-const CHALLENGE_END   = new Date("2025-07-15T23:59:59");
+const CHALLENGE_START = new Date("2026-10-23T00:00:00");
+const CHALLENGE_END   = new Date("2026-12-12T23:59:59");
 
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -741,20 +741,12 @@ async function loadMyIdeas(uid){
 async function loadReferrals(uid){
   const tbody = document.getElementById("refBody");
   try{
-    // Android app stores referrals as doc at referrals/{userId}
-    const refSnap = await getDoc(doc(db,"referrals",uid));
-    if(!refSnap.exists()){
-      tbody.innerHTML=`<tr><td colspan="4"><div class="state-box"><div class="state-icon">📭</div><p>No referrals yet.</p></div></td></tr>`;
-      document.getElementById("refCountDisplay").textContent = "0";
-      return;
-    }
-    const data = refSnap.data();
-    // referrals doc may contain a list or subcollection
-    // Try subcollection first: referrals/{uid}/referredUsers
-    const subSnap = await getDocs(collection(db,"referrals",uid,"referredUsers"));
+    // referralCount is on the users doc (already loaded in loadUserData)
+    // Read referred users from users/{uid}/referredUsers subcollection (allowed by /{allSubcollections=**})
+    const subSnap = await getDocs(collection(db,"users",uid,"referredUsers"));
     if(!subSnap.empty){
       const verified = subSnap.docs.filter(d=>d.data().status==="verified"||d.data().isVerified);
-      document.getElementById("refCountDisplay").textContent = verified.length;
+      document.getElementById("refCountDisplay").textContent = verified.length||subSnap.size;
       tbody.innerHTML = subSnap.docs.map(d=>{
         const r  = d.data();
         const st = (r.status||(r.isVerified?"verified":"unverified")).toLowerCase();
@@ -762,18 +754,35 @@ async function loadReferrals(uid){
           <td style="font-family:monospace;font-size:0.78rem;color:var(--sub)">${r.referredUid||r.uid||d.id}</td>
           <td>${r.name||r.email||r.referredEmail||"—"}</td>
           <td>${fmtDate(r.createdAt||r.joinedAt||r.timestamp)}</td>
-          <td><span class="badge ${st}">${st.charAt(0).toUpperCase()+st.slice(1)}</span></td>
+          <td><span class="badge ${st==="verified"?"verified":"pending"}">${st.charAt(0).toUpperCase()+st.slice(1)}</span></td>
         </tr>`;
       }).join("");
       return;
     }
-    // Fallback: referrals doc fields directly (array or count)
-    const count = data.referralCount||data.count||data.total||0;
-    document.getElementById("refCountDisplay").textContent = count;
-    tbody.innerHTML = `<tr><td colspan="4"><div class="state-box"><div class="state-icon">📭</div><p>Referral details not available. Total verified: ${count}</p></div></td></tr>`;
+    // Fallback: try referrals/{uid}/referredUsers
+    try{
+      const refSubSnap = await getDocs(collection(db,"referrals",uid,"referredUsers"));
+      if(!refSubSnap.empty){
+        const verified = refSubSnap.docs.filter(d=>d.data().status==="verified"||d.data().isVerified);
+        document.getElementById("refCountDisplay").textContent = verified.length||refSubSnap.size;
+        tbody.innerHTML = refSubSnap.docs.map(d=>{
+          const r  = d.data();
+          const st = (r.status||(r.isVerified?"verified":"unverified")).toLowerCase();
+          return `<tr>
+            <td style="font-family:monospace;font-size:0.78rem;color:var(--sub)">${r.referredUid||r.uid||d.id}</td>
+            <td>${r.name||r.email||r.referredEmail||"—"}</td>
+            <td>${fmtDate(r.createdAt||r.joinedAt||r.timestamp)}</td>
+            <td><span class="badge ${st==="verified"?"verified":"pending"}">${st.charAt(0).toUpperCase()+st.slice(1)}</span></td>
+          </tr>`;
+        }).join("");
+        return;
+      }
+    }catch(_){}
+    tbody.innerHTML=`<tr><td colspan="4"><div class="state-box"><div class="state-icon">📭</div><p>No referrals yet.</p></div></td></tr>`;
+    document.getElementById("refCountDisplay").textContent = "0";
   }catch(e){
     console.error("loadReferrals",e.code,e.message);
-    tbody.innerHTML = `<tr><td colspan="4"><div class="state-box"><div class="state-icon">⚠️</div><p>${e.code==='permission-denied'?'Permission denied — check Firestore rules for referrals collection.':e.message}</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4"><div class="state-box"><div class="state-icon">⚠️</div><p>${e.message}</p></div></td></tr>`;
   }
 }
 
