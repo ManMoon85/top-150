@@ -576,14 +576,20 @@ async function loadAllMembers(){
     });
 
     const snap = await getDocs(collection(db,"users"));
-    allMembers = snap.docs.map(d=>{
+    // Fetch viewedIdeas count for each user in parallel
+    const members = await Promise.all(snap.docs.map(async d=>{
       const u = d.data();
-      const w = Number(u.ideasWatched  ?? u.watched    ?? 0);
-      const r = Number(u.referralCount ?? u.referrals  ?? 0);
+      const r = Number(u.referralCount ?? u.referrals ?? 0);
       const a = ideaCountMap[d.id] ?? Number(u.approvedIdeas ?? u.ideas ?? 0);
+      let w = Number(u.ideasWatched ?? u.watched ?? 0);
+      try{
+        const vSnap = await getDocs(collection(db,"users",d.id,"viewedIdeas"));
+        if(vSnap.size > w) w = vSnap.size;
+      }catch(_){}
       const pts = calcPts(w, r, a);
       return { uid:d.id, name:u.username||u.name||u.email||"Member", photo:u.photoURL||"", w, r, a, pts, createdAt:u.createdAt };
-    }).sort((a,b) => b.pts - a.pts || (a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));
+    }));
+    allMembers = members.sort((a,b) => b.pts - a.pts || (a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));
   }catch(e){ console.error("loadAllMembers",e.code,e.message); }
 }
 
@@ -595,11 +601,15 @@ async function loadUserData(user){
   const name  = u.username||u.name||user.email.split("@")[0];
   const photo = u.photoURL||user.photoURL||avatar(name);
 
-  const watched = Number(u.ideasWatched ?? u.watched   ?? 0);
-  const refs    = Number(u.referralCount ?? u.referrals ?? 0);
-  // Use ideaCountMap built during loadAllMembers (counts ALL posted ideas, no approval needed)
-  const ideas   = ideaCountMap[user.uid] ?? Number(u.approvedIdeas ?? u.ideas ?? 0);
-  const pts     = calcPts(watched, refs, ideas);
+  const refs  = Number(u.referralCount ?? u.referrals ?? 0);
+  const ideas = ideaCountMap[user.uid] ?? Number(u.approvedIdeas ?? u.ideas ?? 0);
+  // Count viewedIdeas subcollection for accurate watched count
+  let watched = Number(u.ideasWatched ?? u.watched ?? 0);
+  try{
+    const vSnap = await getDocs(collection(db,"users",user.uid,"viewedIdeas"));
+    if(vSnap.size > watched) watched = vSnap.size;
+  }catch(_){}
+  const pts = calcPts(watched, refs, ideas);
 
   // Sync allMembers so rank is accurate
   const mi = allMembers.findIndex(m => m.uid === user.uid);
